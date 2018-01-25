@@ -1,0 +1,16 @@
+update_each = "6h"
+directory = "/tmp"
+
+[databases]
+
+  [databases.ip2location]
+  enabled = true
+  weight = 1.0
+
+  [databases.dbip]
+  enabled = true
+  weight = 1.1
+
+  [databases.maxmind]
+  enabled = true
+  weight = 1.3
