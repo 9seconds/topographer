@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"os"
 
 	log "github.com/sirupsen/logrus"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	"github.com/9seconds/topographer/config"
-	"github.com/9seconds/topographer/providers/maxmind"
+	"github.com/9seconds/topographer/providers"
 )
 
 var (
@@ -44,6 +45,7 @@ func main() {
 	}
 
 	fmt.Println(conf)
-	mm := maxmind.NewProvider(conf)
-	fmt.Println(mm.Update())
+	mm := providers.NewMaxMind(conf)
+	mm.Reopen()
+	fmt.Println(mm.Resolve([]net.IP{net.ParseIP("81.2.69.142")}))
 }

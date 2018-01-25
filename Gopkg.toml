@@ -44,3 +44,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/juju/errors"
+
+[[constraint]]
+  name = "github.com/oschwald/geoip2-golang"
+  version = "1.1.0"

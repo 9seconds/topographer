@@ -24,9 +24,20 @@ type Provider struct {
 	Directory   string
 }
 
+type GeoResult struct {
+	Country string
+	City    string
+}
+
+type ResolveResult struct {
+	ProviderName string
+	Results      []GeoResult
+}
+
 type GeoProvider interface {
 	Update() (bool, error)
-	Resolve(ips []net.IP) []string
+	Reopen() error
+	Resolve(ips []net.IP) ResolveResult
 }
 
 func (p *Provider) DownloadURL(url string, timeout time.Duration) (*os.File, error) {
