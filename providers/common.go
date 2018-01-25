@@ -31,12 +31,12 @@ type GeoResult struct {
 
 type ResolveResult struct {
 	ProviderName string
-	Results      []GeoResult
+	Results      map[string]GeoResult
 }
 
 type GeoProvider interface {
 	Update() (bool, error)
-	Reopen() error
+	Reopen(time.Time) error
 	Resolve(ips []net.IP) ResolveResult
 }
 
@@ -53,11 +53,16 @@ func (p *Provider) DownloadURL(url string, timeout time.Duration) (*os.File, err
 		os.Remove(tempFile.Name())
 		return nil, errors.Annotatef(err, "Cannot access URL %s", url)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Annotatef(err, "URL gave status code %d", resp.StatusCode)
+	}
 
 	if _, err := io.Copy(tempFile, resp.Body); err != nil {
-		io.Copy(ioutil.Discard, resp.Body)
-
 		tempFile.Close()
 		os.Remove(tempFile.Name())
 		return nil, errors.Annotatef(err, "Cannot read from URL %s", url)

@@ -24,6 +24,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/ip2location/ip2location-go"
+  packages = ["."]
+  revision = "48dae05c8ad04fbc67ae9da471505700ed41b1f0"
+
+[[projects]]
+  branch = "master"
   name = "github.com/juju/errors"
   packages = ["."]
   revision = "c7d06af17c68cd34c835053720b21f6549d9b0ee"
@@ -70,6 +76,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dd07572a49b1ee651d18ce9bed63365691566ae107a0adc574da0372661d3da7"
+  inputs-digest = "c519320dbcd451e434e6ab9b7bf1988a858006ac29af79cfa2214ec7fae8d056"
   solver-name = "gps-cdcl"
   solver-version = 1

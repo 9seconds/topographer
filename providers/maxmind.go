@@ -16,9 +16,11 @@ import (
 	"github.com/juju/errors"
 )
 
-const dbURL = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz"
-const timeout = time.Minute
-const dbname = "maxmind"
+const (
+	maxMindDBURL   = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz"
+	maxMindTimeout = time.Minute
+	maxMindDBName  = "maxmind"
+)
 
 type MaxMind struct {
 	Provider
@@ -27,7 +29,7 @@ type MaxMind struct {
 }
 
 func (mm *MaxMind) Update() (bool, error) {
-	rawFile, err := mm.DownloadURL(dbURL, timeout)
+	rawFile, err := mm.DownloadURL(maxMindDBURL, maxMindTimeout)
 	if err != nil {
 		return false, errors.Annotatef(err, "Cannot update MaxMind DB")
 	}
@@ -61,29 +63,29 @@ func (mm *MaxMind) Update() (bool, error) {
 		baseName := filepath.Base(header.Name)
 		extension := filepath.Ext(baseName)
 		if strings.ToLower(extension) == ".mmdb" {
-			return mm.Save(dbname, tarReader)
+			return mm.Save(maxMindDBName, tarReader)
 		}
 	}
 }
 
-func (mm *MaxMind) Reopen() error {
-	db, err := maxminddb.Open(filepath.Join(mm.Directory, dbname))
+func (mm *MaxMind) Reopen(lastUpdated time.Time) error {
+	db, err := maxminddb.Open(filepath.Join(mm.Directory, maxMindDBName))
 	if err != nil {
 		return errors.Annotate(err, "Cannot open database")
 	}
 
 	mm.Ready = false
 	mm.db = db
-	mm.LastUpdated = time.Now()
+	mm.LastUpdated = lastUpdated
 	mm.Ready = true
 
 	return nil
 }
 
-func (mm *MaxMind) Resolve(ips []net.IP) *ResolveResult {
+func (mm *MaxMind) Resolve(ips []net.IP) ResolveResult {
 	results := ResolveResult{
-		ProviderName: dbname,
-		Results:      make([]GeoResult, 0, len(ips)),
+		ProviderName: maxMindDBName,
+		Results:      make(map[string]GeoResult),
 	}
 
 	for _, ip := range ips {
@@ -98,10 +100,10 @@ func (mm *MaxMind) Resolve(ips []net.IP) *ResolveResult {
 			}
 			result.Country = strings.ToLower(city.Country.IsoCode)
 		}
-		results.Results = append(results.Results, result)
+		results.Results[ip.String()] = result
 	}
 
-	return &results
+	return results
 }
 
 func NewMaxMind(conf *config.Config) *MaxMind {

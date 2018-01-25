@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -46,6 +47,10 @@ func main() {
 
 	fmt.Println(conf)
 	mm := providers.NewMaxMind(conf)
-	mm.Reopen()
+	i2l := providers.NewIP2Location(conf)
+	// i2l.Update()
+	mm.Reopen(time.Now())
+	i2l.Reopen(time.Now())
 	fmt.Println(mm.Resolve([]net.IP{net.ParseIP("81.2.69.142")}))
+	fmt.Println(i2l.Resolve([]net.IP{net.ParseIP("81.2.69.142")}))
 }
