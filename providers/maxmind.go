@@ -75,6 +75,10 @@ func (mm *MaxMind) Reopen(lastUpdated time.Time) error {
 	}
 
 	mm.Ready = false
+	if mm.db != nil {
+		mm.db.Close()
+	}
+
 	mm.db = db
 	mm.LastUpdated = lastUpdated
 	mm.Ready = true

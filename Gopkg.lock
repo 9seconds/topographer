@@ -9,6 +9,18 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/EvilSuperstars/go-cidrman"
+  packages = ["."]
+  revision = "4e5a4a63d9b78757b4891b8de60be2606d8972ee"
+
+[[projects]]
+  name = "github.com/PuerkitoBio/goquery"
+  packages = ["."]
+  revision = "a41cf096e64e3752d7683898d5746bc0b98ee213"
+  version = "v1.2.0"
+
+[[projects]]
+  branch = "master"
   name = "github.com/alecthomas/template"
   packages = [
     ".",
@@ -21,6 +33,18 @@
   name = "github.com/alecthomas/units"
   packages = ["."]
   revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/andybalholm/cascadia"
+  packages = ["."]
+  revision = "349dd0209470eabd9514242c688c403c0926d266"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/asergeyev/nradix"
+  packages = ["."]
+  revision = "3872ab85bb568d5400c3f53ac4d903744b2c8ea9"
 
 [[projects]]
   branch = "master"
@@ -56,7 +80,16 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "3d37316aaa6bd9929127ac9a527abf408178ea7b"
+  revision = "0efb9460aaf800c6376acf625be2853bceac2e06"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = [
+    "html",
+    "html/atom"
+  ]
+  revision = "0ed95abb35c445290478a5348a7b38bb154135fd"
 
 [[projects]]
   branch = "master"
@@ -65,7 +98,7 @@
     "unix",
     "windows"
   ]
-  revision = "ef802241c90f84d84d644a2d8d0de8ee96038c9c"
+  revision = "03467258950d845cd1877eab69461b98e8c09219"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
@@ -82,6 +115,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "921c2936ff77045d7daf4c3516e42d86bce339a63aad225c06b0b0adcd18f537"
+  inputs-digest = "4f2b4be11b626303dc613092eb6fc743d2fce77454ff2fe217517e427c668212"
   solver-name = "gps-cdcl"
   solver-version = 1

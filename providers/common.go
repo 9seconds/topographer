@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -75,7 +74,6 @@ func (p *Provider) DownloadURL(url string, timeout time.Duration) (*os.File, err
 
 func (p *Provider) Save(filename string, newFile io.Reader) (bool, error) {
 	path := filepath.Join(p.Directory, filename)
-	fmt.Println(path)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		file, err := os.Create(path)

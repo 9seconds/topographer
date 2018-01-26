@@ -81,8 +81,10 @@ func (sx *Sypex) Reopen(lastUpdated time.Time) (err error) {
 				err = errors.Annotate(x, "Cannot reopen Sypex database")
 			}
 		}
+		sx.Ready = true
 	}()
 
+	sx.Ready = false
 	sx.db = sypex.New(filepath.Join(sx.Directory, sypexDBName))
 	sx.LastUpdated = lastUpdated
 

@@ -76,12 +76,14 @@ func (i2l *IP2Location) Reopen(lastUpdated time.Time) error {
 	i2l.dbLock.Lock()
 	defer i2l.dbLock.Unlock()
 
+	i2l.Ready = false
 	if i2l.Ready {
 		ip2location.Close()
 	}
 
 	ip2location.Open(filepath.Join(i2l.Directory, ip2locationDBName))
 	i2l.LastUpdated = lastUpdated
+	i2l.Ready = true
 
 	return nil
 }
