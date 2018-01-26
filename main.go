@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -45,20 +44,7 @@ func main() {
 		log.Fatalf(err.Error())
 	}
 
-	mm := providers.NewMaxMind(conf)
-	i2l := providers.NewIP2Location(conf)
-	sx := providers.NewSypex(conf)
-	dbip := providers.NewDBIP(conf)
-	// dbip.Update()
-	fmt.Println(dbip.Reopen(time.Now()))
-	// sx.Update()
-	sx.Reopen(time.Now())
-	// i2l.Update()
-	// mm.Update()
-	mm.Reopen(time.Now())
-	i2l.Reopen(time.Now())
-	fmt.Println(mm.Resolve([]net.IP{net.ParseIP("81.2.69.142")}))
-	fmt.Println(i2l.Resolve([]net.IP{net.ParseIP("81.2.69.142")}))
-	fmt.Println(sx.Resolve([]net.IP{net.ParseIP("93.73.35.74")}))
-	fmt.Println(dbip.Resolve([]net.IP{net.ParseIP("93.73.35.74")}))
+	pset := providers.NewProviderSet(conf)
+	pset.Update(true)
+	fmt.Println(pset.Resolve([]net.IP{net.ParseIP("81.2.69.142"), net.ParseIP("93.73.35.74")}))
 }

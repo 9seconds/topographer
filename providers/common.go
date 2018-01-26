@@ -37,6 +37,11 @@ type GeoProvider interface {
 	Update() (bool, error)
 	Reopen(time.Time) error
 	Resolve(ips []net.IP) ResolveResult
+	IsReady() bool
+}
+
+func (p *Provider) IsReady() bool {
+	return p.Ready
 }
 
 func (p *Provider) DownloadURL(url string, timeout time.Duration) (*os.File, error) {
