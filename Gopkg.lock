@@ -73,9 +73,15 @@
   revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
   version = "v2.2.6"
 
+[[projects]]
+  name = "gopkg.in/night-codes/go-sypexgeo.v1"
+  packages = ["."]
+  revision = "9987692b262bc78e5baab47a77e3430028bbb68b"
+  version = "v1.2"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c519320dbcd451e434e6ab9b7bf1988a858006ac29af79cfa2214ec7fae8d056"
+  inputs-digest = "921c2936ff77045d7daf4c3516e42d86bce339a63aad225c06b0b0adcd18f537"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -46,11 +46,15 @@ func main() {
 	}
 
 	fmt.Println(conf)
-	mm := providers.NewMaxMind(conf)
-	i2l := providers.NewIP2Location(conf)
+	// mm := providers.NewMaxMind(conf)
+	// i2l := providers.NewIP2Location(conf)
+	sx := providers.NewSypex(conf)
+	// sx.Update()
+	sx.Reopen(time.Now())
 	// i2l.Update()
-	mm.Reopen(time.Now())
-	i2l.Reopen(time.Now())
-	fmt.Println(mm.Resolve([]net.IP{net.ParseIP("81.2.69.142")}))
-	fmt.Println(i2l.Resolve([]net.IP{net.ParseIP("81.2.69.142")}))
+	// mm.Reopen(time.Now())
+	// i2l.Reopen(time.Now())
+	// fmt.Println(mm.Resolve([]net.IP{net.ParseIP("81.2.69.142")}))
+	// fmt.Println(i2l.Resolve([]net.IP{net.ParseIP("81.2.69.142")}))
+	fmt.Println(sx.Resolve([]net.IP{net.ParseIP("93.73.35.74")}))
 }

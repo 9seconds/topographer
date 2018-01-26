@@ -84,7 +84,7 @@ func (mm *MaxMind) Reopen(lastUpdated time.Time) error {
 
 func (mm *MaxMind) Resolve(ips []net.IP) ResolveResult {
 	results := ResolveResult{
-		ProviderName: maxMindDBName,
+		ProviderName: "maxmind",
 		Results:      make(map[string]GeoResult),
 	}
 

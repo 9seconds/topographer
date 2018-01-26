@@ -72,7 +72,7 @@ func (i2l *IP2Location) Update() (bool, error) {
 	return false, errors.Errorf("Cannot find required file")
 }
 
-func (i2l *IP2Location) Reopen(LastUpdated time.Time) error {
+func (i2l *IP2Location) Reopen(lastUpdated time.Time) error {
 	i2l.dbLock.Lock()
 	defer i2l.dbLock.Unlock()
 
@@ -81,13 +81,14 @@ func (i2l *IP2Location) Reopen(LastUpdated time.Time) error {
 	}
 
 	ip2location.Open(filepath.Join(i2l.Directory, ip2locationDBName))
+	i2l.LastUpdated = lastUpdated
 
 	return nil
 }
 
 func (i2l *IP2Location) Resolve(ips []net.IP) ResolveResult {
 	results := ResolveResult{
-		ProviderName: ip2locationDBName,
+		ProviderName: "ip2location",
 		Results:      make(map[string]GeoResult),
 	}
 

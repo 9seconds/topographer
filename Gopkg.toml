@@ -52,3 +52,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/ip2location/ip2location-go"
+
+[[constraint]]
+  name = "gopkg.in/night-codes/go-sypexgeo.v1"
+  version = "1.2.0"
