@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -15,11 +16,7 @@ import (
 	"github.com/juju/errors"
 )
 
-const (
-	sypexDBURL   = "http://sypexgeo.net/files/SxGeoCity_utf8.zip"
-	sypexTimeout = 2 * time.Minute
-	sypexDBName  = "sypex"
-)
+const sypexDBURL = "http://sypexgeo.net/files/SxGeoCity_utf8.zip"
 
 type Sypex struct {
 	Provider
@@ -28,7 +25,7 @@ type Sypex struct {
 }
 
 func (sx *Sypex) Update() (bool, error) {
-	rawFile, err := sx.DownloadURL(sypexDBURL, sypexTimeout)
+	rawFile, err := sx.downloadURL(sypexDBURL)
 	if err != nil {
 		return false, errors.Annotate(err, "Cannot update IP2Location DB")
 	}
@@ -57,13 +54,12 @@ func (sx *Sypex) Update() (bool, error) {
 			continue
 		}
 
-		baseName := filepath.Base(zfile.Name)
-		extension := filepath.Ext(baseName)
+		extension := filepath.Ext(zfile.Name)
 		if strings.ToLower(extension) == ".dat" {
 			if opened, err := zfile.Open(); err != nil {
 				return false, errors.Annotate(err, "Cannot extract file from archive")
 			} else {
-				return sx.Save(sypexDBName, opened)
+				return sx.saveFile(opened)
 			}
 		}
 	}
@@ -72,64 +68,71 @@ func (sx *Sypex) Update() (bool, error) {
 }
 
 func (sx *Sypex) Reopen(lastUpdated time.Time) (err error) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			switch x := rec.(type) {
-			case string:
-				err = errors.Annotate(errors.New(x), "Cannot reopen Sypex database")
-			case error:
-				err = errors.Annotate(x, "Cannot reopen Sypex database")
+	return sx.reopenSafe(lastUpdated, func() (err error) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				switch x := rec.(type) {
+				case string:
+					err = errors.Annotate(errors.New(x), "Cannot reopen Sypex database")
+				case error:
+					err = errors.Annotate(x, "Cannot reopen Sypex database")
+				}
 			}
-		}
-		sx.Ready = true
-	}()
+		}()
 
-	sx.Ready = false
-	sx.db = sypex.New(filepath.Join(sx.Directory, sypexDBName))
-	sx.LastUpdated = lastUpdated
-
-	return
+		sx.db = sypex.New(sx.FilePath())
+		return
+	})
 }
 
 func (sx *Sypex) Resolve(ips []net.IP) ResolveResult {
-	results := ResolveResult{
-		ProviderName: "sypex",
-		Results:      make(map[string]GeoResult),
-	}
+	return sx.resolveSafe(func() map[string]GeoResult {
+		results := make(map[string]GeoResult)
 
-	for _, ip := range ips {
-		result := GeoResult{}
-		if info, err := sx.db.GetCityFull(ip.String()); err != nil {
-			log.WithFields(log.Fields{
-				"ip":    ip.String(),
-				"error": err.Error(),
-			}).Debug("Cannot resolve ip.")
-		} else {
-			if countryData, ok := info["country"]; ok {
-				if countryMap, ok := countryData.(map[string]interface{}); ok {
-					if isoCode, ok := countryMap["iso"]; ok {
-						if isoCodeString, ok := isoCode.(string); ok {
-							result.Country = strings.ToLower(isoCodeString)
+		for _, ip := range ips {
+			result := GeoResult{}
+			if info, err := sx.db.GetCityFull(ip.String()); err != nil {
+				log.WithFields(log.Fields{
+					"ip":    ip.String(),
+					"error": err.Error(),
+				}).Debug("Cannot resolve ip.")
+			} else {
+				if countryData, ok := info["country"]; ok {
+					if countryMap, ok := countryData.(map[string]interface{}); ok {
+						if isoCode, ok := countryMap["iso"]; ok {
+							if isoCodeString, ok := isoCode.(string); ok {
+								result.Country = strings.ToLower(isoCodeString)
+							}
+						}
+					}
+				}
+				if sx.precision == config.PRECISION_CITY {
+					if cityData, ok := info["city"]; ok {
+						if cityMap, ok := cityData.(map[string]interface{}); ok {
+							if cityName, ok := cityMap["name_en"]; ok {
+								if cityNameString, ok := cityName.(string); ok {
+									result.City = cityNameString
+								}
+							}
 						}
 					}
 				}
 			}
-			if cityData, ok := info["city"]; ok {
-				if cityMap, ok := cityData.(map[string]interface{}); ok {
-					if cityName, ok := cityMap["name_en"]; ok {
-						if cityNameString, ok := cityName.(string); ok {
-							result.City = cityNameString
-						}
-					}
-				}
-			}
+			results[ip.String()] = result
 		}
-		results.Results[ip.String()] = result
-	}
 
-	return results
+		return results
+	})
 }
 
 func NewSypex(conf *config.Config) *Sypex {
-	return &Sypex{Provider: Provider{Directory: conf.Directory}}
+	return &Sypex{
+		Provider: Provider{
+			directory:       conf.Directory,
+			dbname:          "sypex",
+			downloadTimeout: 2 * time.Minute,
+			precision:       conf.Precision,
+			updateLock:      &sync.RWMutex{},
+		},
+	}
 }

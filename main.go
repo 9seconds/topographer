@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -46,5 +47,6 @@ func main() {
 
 	pset := providers.NewProviderSet(conf)
 	pset.Update(true)
+	time.Sleep(time.Duration(2) * time.Minute)
 	fmt.Println(pset.Resolve([]net.IP{net.ParseIP("81.2.69.142"), net.ParseIP("93.73.35.74")}))
 }

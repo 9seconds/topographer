@@ -68,3 +68,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/asergeyev/nradix"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/hashicorp/golang-lru"

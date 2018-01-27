@@ -3,6 +3,7 @@ package providers
 import (
 	"archive/zip"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,9 +18,12 @@ import (
 )
 
 const (
-	ip2locationDBURL   = "http://download.ip2location.com/lite/IP2LOCATION-LITE-DB1.BIN.ZIP"
-	ip2locationTimeout = time.Minute
-	ip2locationDBName  = "ip2location"
+	ip2locationDBCodeCountry = "DB1LITEBIN"
+	ip2locationDBCodeCity    = "DB3LITEBIN"
+
+	ip2locationDBURL = "https://www.ip2location.com/download/"
+
+	ip2locationTokenEnvName = "TOPOGRAPHER_IP2LOCATION_DOWNLOAD_TOKEN"
 )
 
 type IP2Location struct {
@@ -29,7 +33,20 @@ type IP2Location struct {
 }
 
 func (i2l *IP2Location) Update() (bool, error) {
-	rawFile, err := i2l.DownloadURL(ip2locationDBURL, ip2locationTimeout)
+	token, ok := os.LookupEnv(ip2locationTokenEnvName)
+	if !ok {
+		return false, errors.Errorf("ip2location download token is not set")
+	}
+
+	params := url.Values{}
+	params.Set("token", token)
+	if i2l.precision == config.PRECISION_COUNTRY {
+		params.Set("file", ip2locationDBCodeCountry)
+	} else {
+		params.Set("file", ip2locationDBCodeCity)
+	}
+
+	rawFile, err := i2l.downloadURL(ip2locationDBURL + "?" + params.Encode())
 	if err != nil {
 		return false, errors.Annotatef(err, "Cannot update IP2Location DB")
 	}
@@ -58,13 +75,12 @@ func (i2l *IP2Location) Update() (bool, error) {
 			continue
 		}
 
-		baseName := filepath.Base(zfile.Name)
-		extension := filepath.Ext(baseName)
+		extension := filepath.Ext(zfile.Name)
 		if strings.ToLower(extension) == ".bin" {
 			if opened, err := zfile.Open(); err != nil {
 				return false, errors.Annotate(err, "Cannot extract file from archive")
 			} else {
-				return i2l.Save(ip2locationDBName, opened)
+				return i2l.saveFile(opened)
 			}
 		}
 	}
@@ -72,43 +88,37 @@ func (i2l *IP2Location) Update() (bool, error) {
 	return false, errors.Errorf("Cannot find required file")
 }
 
-func (i2l *IP2Location) Reopen(lastUpdated time.Time) error {
-	i2l.dbLock.Lock()
-	defer i2l.dbLock.Unlock()
+func (i2l *IP2Location) Reopen(lastUpdated time.Time) (err error) {
+	return i2l.reopenSafe(lastUpdated, func() error {
+		if i2l.available {
+			ip2location.Close()
+		}
 
-	i2l.Ready = false
-	if i2l.Ready {
-		ip2location.Close()
-	}
+		ip2location.Open(i2l.FilePath())
 
-	ip2location.Open(filepath.Join(i2l.Directory, ip2locationDBName))
-	i2l.LastUpdated = lastUpdated
-	i2l.Ready = true
-
-	return nil
+		return nil
+	})
 }
 
 func (i2l *IP2Location) Resolve(ips []net.IP) ResolveResult {
-	results := ResolveResult{
-		ProviderName: "ip2location",
-		Results:      make(map[string]GeoResult),
-	}
-
-	for _, ip := range ips {
-		results.Results[ip.String()] = i2l.ResolveIP(ip)
-	}
-
-	return results
+	return i2l.resolveSafe(func() map[string]GeoResult {
+		results := make(map[string]GeoResult)
+		for _, ip := range ips {
+			results[ip.String()] = i2l.resolveIP(ip)
+		}
+		return results
+	})
 }
 
-func (i2l *IP2Location) ResolveIP(ip net.IP) GeoResult {
+func (i2l *IP2Location) resolveIP(ip net.IP) GeoResult {
 	i2l.dbLock.Lock()
 	result := ip2location.Get_all(ip.String())
 	i2l.dbLock.Unlock()
 
 	georesult := GeoResult{Country: strings.ToLower(result.Country_short)}
 
-	if !strings.Contains(result.City, "This parameter is unavailable") {
+	if i2l.precision == config.PRECISION_CITY && !strings.Contains(result.City,
+		"This parameter is unavailable") {
 		georesult.City = result.City
 	}
 
@@ -117,7 +127,13 @@ func (i2l *IP2Location) ResolveIP(ip net.IP) GeoResult {
 
 func NewIP2Location(conf *config.Config) *IP2Location {
 	return &IP2Location{
-		Provider: Provider{Directory: conf.Directory},
-		dbLock:   &sync.Mutex{},
+		Provider: Provider{
+			directory:       conf.Directory,
+			dbname:          "ip2location",
+			downloadTimeout: 2 * time.Minute,
+			precision:       conf.Precision,
+			updateLock:      &sync.RWMutex{},
+		},
+		dbLock: &sync.Mutex{},
 	}
 }

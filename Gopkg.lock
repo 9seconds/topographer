@@ -48,6 +48,15 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/golang-lru"
+  packages = [
+    ".",
+    "simplelru"
+  ]
+  revision = "0a025b7e63adc15a622f29b0b2c4c3848243bbf6"
+
+[[projects]]
+  branch = "master"
   name = "github.com/ip2location/ip2location-go"
   packages = ["."]
   revision = "48dae05c8ad04fbc67ae9da471505700ed41b1f0"
@@ -98,7 +107,7 @@
     "unix",
     "windows"
   ]
-  revision = "03467258950d845cd1877eab69461b98e8c09219"
+  revision = "ff2a66f350cefa5c93a634eadb5d25bb60c85a9c"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
@@ -115,6 +124,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4f2b4be11b626303dc613092eb6fc743d2fce77454ff2fe217517e427c668212"
+  inputs-digest = "3c05392b6b62f11d31cc5014a997c697c3a835849f299a2022123da38f2926b6"
   solver-name = "gps-cdcl"
   solver-version = 1

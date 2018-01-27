@@ -7,8 +7,8 @@ import (
 	"io"
 	"net"
 	"os"
-	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	cidrman "github.com/EvilSuperstars/go-cidrman"
@@ -21,17 +21,16 @@ import (
 )
 
 const (
-	dbipDBURL   = "https://db-ip.com/db/download/city"
-	dbipTimeout = 3 * time.Minute
-	dbipDBName  = "dbip"
+	dbipDBURLCity    = "https://db-ip.com/db/download/city"
+	dbipDBURLCountry = "https://db-ip.com/db/download/country"
 
 	dbipIdxStartIP  = 0
 	dbipIdxFinishIP = 1
 	dbipIdxCountry  = 2
 	dbipIdxCity     = 4
-)
 
-var dbipStopIP net.IP = net.ParseIP("255.255.255.255")
+	dbipLRUCacheSize = 256
+)
 
 type DBIP struct {
 	Provider
@@ -40,21 +39,26 @@ type DBIP struct {
 }
 
 func (di *DBIP) Update() (bool, error) {
-	archiveUrl, err := di.updateGetDownloadLink()
+	initialUrl := dbipDBURLCountry
+	if di.precision == config.PRECISION_CITY {
+		initialUrl = dbipDBURLCity
+	}
+
+	archiveUrl, err := di.updateGetDownloadLink(initialUrl)
 	if err != nil {
 		return false, errors.Annotate(err, "Cannot get download URL")
 	}
 
-	rawFile, err := di.DownloadURL(archiveUrl, sypexTimeout)
+	rawFile, err := di.downloadURL(archiveUrl)
 	if err != nil {
 		return false, errors.Annotate(err, "Cannot download DBIP")
 	}
 
-	return di.Save(dbipDBName, rawFile)
+	return di.saveFile(rawFile)
 }
 
-func (di *DBIP) updateGetDownloadLink() (string, error) {
-	doc, err := goquery.NewDocument(dbipDBURL)
+func (di *DBIP) updateGetDownloadLink(url string) (string, error) {
+	doc, err := goquery.NewDocument(url)
 	if err != nil {
 		return "", errors.Annotate(err, "Cannot fetch DBIP HTML page")
 	}
@@ -67,41 +71,21 @@ func (di *DBIP) updateGetDownloadLink() (string, error) {
 	return url, nil
 }
 
-func (di *DBIP) Reopen(lastUpdated time.Time) error {
-	di.Ready = false
-	di.db = nil
-	db, err := di.createDatabase()
-	if err != nil {
-		return err
-	} else {
-		di.db = db
-	}
-	di.LastUpdated = lastUpdated
-	di.Ready = true
-
-	return nil
-}
-
-func (di *DBIP) Resolve(ips []net.IP) ResolveResult {
-	results := ResolveResult{
-		ProviderName: "dbip",
-		Results:      make(map[string]GeoResult),
-	}
-
-	for _, ip := range ips {
-		stringIp := ip.String()
-		result := GeoResult{}
-		if data, err := di.db.FindCIDR(stringIp + "/32"); err == nil {
-			result = *(data.(*GeoResult))
+func (di *DBIP) Reopen(lastUpdated time.Time) (err error) {
+	return di.reopenSafe(lastUpdated, func() error {
+		di.db = nil
+		db, err := di.createDatabase()
+		if err != nil {
+			return err
 		}
-		results.Results[stringIp] = result
-	}
+		di.db = db
 
-	return results
+		return nil
+	})
 }
 
 func (di *DBIP) createDatabase() (*nradix.Tree, error) {
-	rawFile, err := os.Open(filepath.Join(di.Directory, dbipDBName))
+	rawFile, err := os.Open(di.FilePath())
 	if err != nil {
 		return nil, errors.Annotate(err, "Cannot open database file")
 	}
@@ -114,8 +98,8 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) {
 
 	csvReader := csv.NewReader(gzipFile)
 	csvReader.ReuseRecord = true
-	csvReader.FieldsPerRecord = 5
 	tree := nradix.NewTree(0)
+	cache := newDBIPCache(dbipLRUCacheSize)
 
 	for {
 		record, err := csvReader.Read()
@@ -126,26 +110,26 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) {
 			return nil, errors.Annotate(err, "Error during parsing CSV")
 		}
 
-		startIp := net.ParseIP(record[dbipIdxStartIP])
-		finishIp := net.ParseIP(record[dbipIdxFinishIP])
-		if startIp == nil || finishIp == nil {
-			continue
-		}
-		if startIp.To4() == nil || finishIp.To4() == nil {
-			continue
-		}
-
+		startIpStr := record[dbipIdxStartIP]
+		finishIpStr := record[dbipIdxFinishIP]
 		country := strings.ToLower(record[dbipIdxCountry])
-		if country == "zz" {
+		city := ""
+		if di.precision == config.PRECISION_CITY {
+			city = record[dbipIdxCity]
+		}
+
+		startIp := net.ParseIP(startIpStr)
+		finishIp := net.ParseIP(finishIpStr)
+		if country == "zz" || startIp == nil || startIp.To4() == nil || finishIp == nil || finishIp.To4() == nil {
 			continue
 		}
-		geoData := &GeoResult{City: record[dbipIdxCity], Country: country}
 
-		subnets, err := di.getSubnets(record[dbipIdxStartIP], record[dbipIdxFinishIP])
+		geoData := cache.get(country, city)
+		subnets, err := di.getSubnets(startIpStr, finishIpStr)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"startIp":  record[dbipIdxStartIP],
-				"finishIp": record[dbipIdxFinishIP],
+				"startIp":  startIpStr,
+				"finishIp": finishIpStr,
 				"err":      err,
 			}).Warn("Cannot parse ip range")
 		} else {
@@ -176,6 +160,48 @@ func (di *DBIP) getSubnets(start, finish string) (subnets []string, err error) {
 	return
 }
 
+type CacheIface interface {
+	Add(key, value interface{})
+	Get(key interface{}) (interface{}, bool)
+}
+
+func (di *DBIP) getGeoResult(cache CacheIface, country, city string) *GeoResult {
+	key := country + "\x00" + city
+	if item, ok := cache.Get(key); ok {
+		return item.(*GeoResult)
+	}
+
+	item := &GeoResult{City: city, Country: country}
+	cache.Add(key, item)
+
+	return item
+}
+
+func (di *DBIP) Resolve(ips []net.IP) ResolveResult {
+	return di.resolveSafe(func() map[string]GeoResult {
+		results := make(map[string]GeoResult)
+
+		for _, ip := range ips {
+			stringIp := ip.String()
+			result := GeoResult{}
+			if data, err := di.db.FindCIDR(stringIp + "/32"); err == nil {
+				result = *(data.(*GeoResult))
+			}
+			results[stringIp] = result
+		}
+
+		return results
+	})
+}
+
 func NewDBIP(conf *config.Config) *DBIP {
-	return &DBIP{Provider: Provider{Directory: conf.Directory}}
+	return &DBIP{
+		Provider: Provider{
+			directory:       conf.Directory,
+			dbname:          "dbip",
+			downloadTimeout: 3 * time.Minute,
+			precision:       conf.Precision,
+			updateLock:      &sync.RWMutex{},
+		},
+	}
 }

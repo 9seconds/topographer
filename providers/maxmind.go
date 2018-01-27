@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	maxminddb "github.com/oschwald/geoip2-golang"
@@ -17,9 +18,8 @@ import (
 )
 
 const (
-	maxMindDBURL   = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz"
-	maxMindTimeout = time.Minute
-	maxMindDBName  = "maxmind"
+	maxMindDBURLCountry = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz"
+	maxMindDBURLCity    = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz"
 )
 
 type MaxMind struct {
@@ -29,7 +29,12 @@ type MaxMind struct {
 }
 
 func (mm *MaxMind) Update() (bool, error) {
-	rawFile, err := mm.DownloadURL(maxMindDBURL, maxMindTimeout)
+	url := maxMindDBURLCountry
+	if mm.precision == config.PRECISION_CITY {
+		url = maxMindDBURLCity
+	}
+
+	rawFile, err := mm.downloadURL(url)
 	if err != nil {
 		return false, errors.Annotatef(err, "Cannot update MaxMind DB")
 	}
@@ -60,56 +65,87 @@ func (mm *MaxMind) Update() (bool, error) {
 			continue
 		}
 
-		baseName := filepath.Base(header.Name)
-		extension := filepath.Ext(baseName)
+		extension := filepath.Ext(header.Name)
 		if strings.ToLower(extension) == ".mmdb" {
-			return mm.Save(maxMindDBName, tarReader)
+			return mm.saveFile(tarReader)
 		}
 	}
 }
 
-func (mm *MaxMind) Reopen(lastUpdated time.Time) error {
-	db, err := maxminddb.Open(filepath.Join(mm.Directory, maxMindDBName))
-	if err != nil {
-		return errors.Annotate(err, "Cannot open database")
-	}
+func (mm *MaxMind) Reopen(lastUpdated time.Time) (err error) {
+	return mm.reopenSafe(lastUpdated, func() error {
+		db, err := maxminddb.Open(mm.FilePath())
+		if err != nil {
+			return errors.Annotate(err, "Cannot open database")
+		}
 
-	mm.Ready = false
-	if mm.db != nil {
-		mm.db.Close()
-	}
+		if mm.db != nil {
+			mm.db.Close()
+		}
+		mm.db = db
 
-	mm.db = db
-	mm.LastUpdated = lastUpdated
-	mm.Ready = true
-
-	return nil
+		return nil
+	})
 }
 
 func (mm *MaxMind) Resolve(ips []net.IP) ResolveResult {
-	results := ResolveResult{
-		ProviderName: "maxmind",
-		Results:      make(map[string]GeoResult),
-	}
+	return mm.resolveSafe(func() map[string]GeoResult {
+		results := make(map[string]GeoResult)
 
-	for _, ip := range ips {
-		result := GeoResult{}
-		if city, err := mm.db.City(ip); err != nil {
-			log.WithFields(log.Fields{
-				"ip": ip.String(),
-			}).Debug("Cannot resolve ip.")
-		} else {
-			if cityName, ok := city.City.Names["en"]; ok {
-				result.City = cityName
+		for _, ip := range ips {
+			switch mm.precision {
+			case config.PRECISION_COUNTRY:
+				results[ip.String()] = mm.resolveCountryResult(ip)
+			case config.PRECISION_CITY:
+				results[ip.String()] = mm.resolveCityResult(ip)
 			}
-			result.Country = strings.ToLower(city.Country.IsoCode)
 		}
-		results.Results[ip.String()] = result
+
+		return results
+	})
+}
+
+func (mm *MaxMind) resolveCountryResult(ip net.IP) GeoResult {
+	result := GeoResult{}
+
+	if country, err := mm.db.Country(ip); err != nil {
+		log.WithFields(log.Fields{
+			"ip":    ip.String(),
+			"error": err.Error(),
+		}).Debug("Cannot resolve ip.")
+	} else {
+		result.Country = strings.ToLower(country.Country.IsoCode)
 	}
 
-	return results
+	return result
+}
+
+func (mm *MaxMind) resolveCityResult(ip net.IP) GeoResult {
+	result := GeoResult{}
+
+	if city, err := mm.db.City(ip); err != nil {
+		log.WithFields(log.Fields{
+			"ip":    ip.String(),
+			"error": err.Error(),
+		}).Debug("Cannot resolve ip.")
+	} else {
+		if cityName, ok := city.City.Names["en"]; ok {
+			result.City = cityName
+		}
+		result.Country = strings.ToLower(city.Country.IsoCode)
+	}
+
+	return result
 }
 
 func NewMaxMind(conf *config.Config) *MaxMind {
-	return &MaxMind{Provider: Provider{Directory: conf.Directory}}
+	return &MaxMind{
+		Provider: Provider{
+			directory:       conf.Directory,
+			dbname:          "maxmind",
+			downloadTimeout: time.Minute,
+			precision:       conf.Precision,
+			updateLock:      &sync.RWMutex{},
+		},
+	}
 }
