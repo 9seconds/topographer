@@ -13,18 +13,18 @@ import (
 const updateAttempts = 3
 
 type ProviderSet struct {
-	providers map[string]GeoProvider
-	weights   map[string]float64
+	Providers map[string]GeoProvider
+	Weights   map[string]float64
 }
 
 func (ps *ProviderSet) Update(force bool) {
-	for k := range ps.providers {
+	for k := range ps.Providers {
 		go ps.updateProvider(force, k, 0)
 	}
 }
 
 func (ps *ProviderSet) updateProvider(force bool, name string, attempt int) {
-	provider := ps.providers[name]
+	provider := ps.Providers[name]
 
 	log.WithFields(log.Fields{
 		"provider": name,
@@ -71,12 +71,12 @@ func (ps *ProviderSet) updateProvider(force bool, name string, attempt int) {
 
 func (ps *ProviderSet) Resolve(ips []net.IP) []ResolveResult {
 	var wg sync.WaitGroup
-	results := make([]ResolveResult, 0, len(ps.providers))
-	channel := make(chan ResolveResult, len(ps.providers))
+	results := make([]ResolveResult, 0, len(ps.Providers))
+	channel := make(chan ResolveResult, len(ps.Providers))
 	defer close(channel)
 
 	resultsCount := 0
-	for _, v := range ps.providers {
+	for _, v := range ps.Providers {
 		wg.Add(1)
 		resultsCount += 1
 
@@ -84,7 +84,7 @@ func (ps *ProviderSet) Resolve(ips []net.IP) []ResolveResult {
 			defer wg.Done()
 
 			result := provider.Resolve(ips)
-			result.Weight = ps.weights[result.Provider]
+			result.Weight = ps.Weights[result.Provider]
 			channel <- result
 		}(v)
 	}
@@ -97,27 +97,27 @@ func (ps *ProviderSet) Resolve(ips []net.IP) []ResolveResult {
 	return results
 }
 
-func NewProviderSet(conf *config.Config) ProviderSet {
+func NewProviderSet(conf *config.Config) *ProviderSet {
 	set := ProviderSet{
-		providers: make(map[string]GeoProvider),
-		weights:   make(map[string]float64),
+		Providers: make(map[string]GeoProvider),
+		Weights:   make(map[string]float64),
 	}
 
 	for k, v := range conf.Databases {
 		if v.Enabled {
 			switch k {
 			case "maxmind":
-				set.providers["maxmind"] = NewMaxMind(conf)
+				set.Providers["maxmind"] = NewMaxMind(conf)
 			case "dbip":
-				set.providers["dbip"] = NewDBIP(conf)
+				set.Providers["dbip"] = NewDBIP(conf)
 			case "sypex":
-				set.providers["sypex"] = NewSypex(conf)
+				set.Providers["sypex"] = NewSypex(conf)
 			case "ip2location":
-				set.providers["ip2location"] = NewIP2Location(conf)
+				set.Providers["ip2location"] = NewIP2Location(conf)
 			}
-			set.weights[k] = v.Weight
+			set.Weights[k] = v.Weight
 		}
 	}
 
-	return set
+	return &set
 }

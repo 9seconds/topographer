@@ -72,3 +72,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/hashicorp/golang-lru"
+
+[[constraint]]
+  name = "github.com/go-chi/chi"
+  version = "3.3.2"

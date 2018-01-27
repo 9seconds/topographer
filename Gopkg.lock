@@ -47,6 +47,15 @@
   revision = "3872ab85bb568d5400c3f53ac4d903744b2c8ea9"
 
 [[projects]]
+  name = "github.com/go-chi/chi"
+  packages = [
+    ".",
+    "middleware"
+  ]
+  revision = "e83ac2304db3c50cf03d96a2fcd39009d458bc35"
+  version = "v3.3.2"
+
+[[projects]]
   branch = "master"
   name = "github.com/hashicorp/golang-lru"
   packages = [
@@ -124,6 +133,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3c05392b6b62f11d31cc5014a997c697c3a835849f299a2022123da38f2926b6"
+  inputs-digest = "bced2bb8c4bec7ca41e1ea208b6eff20e86dd8c4302a21fcd76dd1a26a95c0ca"
   solver-name = "gps-cdcl"
   solver-version = 1

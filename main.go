@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"net"
+	"net/http"
 	"os"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
+	"github.com/9seconds/topographer/api"
 	"github.com/9seconds/topographer/config"
 	"github.com/9seconds/topographer/providers"
 )
@@ -47,6 +46,6 @@ func main() {
 
 	pset := providers.NewProviderSet(conf)
 	pset.Update(true)
-	time.Sleep(time.Duration(2) * time.Minute)
-	fmt.Println(pset.Resolve([]net.IP{net.ParseIP("81.2.69.142"), net.ParseIP("93.73.35.74")}))
+	router := api.MakeServer(pset)
+	http.ListenAndServe(":8000", router)
 }

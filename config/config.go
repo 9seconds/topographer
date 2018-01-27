@@ -39,6 +39,8 @@ type DBConfig struct {
 }
 
 type Config struct {
+	Host         string
+	Port         int
 	UpdateEach   duration `toml:"update_each"`
 	Directory    string
 	Databases    map[string]DBConfig
