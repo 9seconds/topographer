@@ -69,24 +69,33 @@ func (ps *ProviderSet) updateProvider(force bool, name string, attempt int) {
 	}
 }
 
-func (ps *ProviderSet) Resolve(ips []net.IP) []ResolveResult {
+func (ps *ProviderSet) Resolve(ips []net.IP, useProviders map[string]bool) []ResolveResult {
 	var wg sync.WaitGroup
 	results := make([]ResolveResult, 0, len(ps.Providers))
 	channel := make(chan ResolveResult, len(ps.Providers))
 	defer close(channel)
 
+	if len(useProviders) == 0 {
+		useProviders = make(map[string]bool)
+		for k := range ps.Providers {
+			useProviders[k] = true
+		}
+	}
+
 	resultsCount := 0
-	for _, v := range ps.Providers {
-		wg.Add(1)
-		resultsCount += 1
+	for k, v := range ps.Providers {
+		if _, ok := useProviders[k]; ok {
+			wg.Add(1)
+			resultsCount += 1
 
-		go func(provider GeoProvider) {
-			defer wg.Done()
+			go func(provider GeoProvider) {
+				defer wg.Done()
 
-			result := provider.Resolve(ips)
-			result.Weight = ps.Weights[result.Provider]
-			channel <- result
-		}(v)
+				result := provider.Resolve(ips)
+				result.Weight = ps.Weights[result.Provider]
+				channel <- result
+			}(v)
+		}
 	}
 
 	wg.Wait()
