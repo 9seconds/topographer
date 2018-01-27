@@ -160,23 +160,6 @@ func (di *DBIP) getSubnets(start, finish string) (subnets []string, err error) {
 	return
 }
 
-type CacheIface interface {
-	Add(key, value interface{})
-	Get(key interface{}) (interface{}, bool)
-}
-
-func (di *DBIP) getGeoResult(cache CacheIface, country, city string) *GeoResult {
-	key := country + "\x00" + city
-	if item, ok := cache.Get(key); ok {
-		return item.(*GeoResult)
-	}
-
-	item := &GeoResult{City: city, Country: country}
-	cache.Add(key, item)
-
-	return item
-}
-
 func (di *DBIP) Resolve(ips []net.IP) ResolveResult {
 	return di.resolveSafe(func() map[string]GeoResult {
 		results := make(map[string]GeoResult)
