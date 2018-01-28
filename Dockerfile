@@ -17,11 +17,12 @@ RUN set -x \
 FROM alpine:3.7
 MAINTAINER Sergey Arkhipov <nineseconds@yandex.ru>
 
+ENTRYPOINT ["/topographer"]
+CMD ["/config.toml"]
+EXPOSE 8000
+
 RUN set -x \
   && apk add --no-cache --update ca-certificates
 
 COPY --from=build-env /go/src/github.com/9seconds/topographer/topographer /topographer
 COPY --from=build-env /go/src/github.com/9seconds/topographer/example.config.toml /config.toml
-
-ENTRYPOINT ["/topographer"]
-CMD ["/config.toml"]

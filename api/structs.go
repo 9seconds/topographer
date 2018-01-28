@@ -6,6 +6,7 @@ import (
 
 	"github.com/9seconds/topographer/providers"
 	"github.com/juju/errors"
+	"github.com/xrash/smetrics"
 )
 
 type providerInfoResponseStruct struct {
@@ -57,27 +58,29 @@ func (ir *ipResolveResponseStruct) calculateVerdict(
 
 	for name, details := range data {
 		if details.Country != "" {
-			if currentValue, ok := countryScores[details.Country]; !ok {
-				countryScores[details.Country] = weights[name]
-			} else {
-				countryScores[details.Country] = currentValue + weights[name]
-			}
+			countryScores[details.Country] += weights[name]
 		}
 	}
 
 	country := ir.getWinner(countryScores)
 	cityScores := make(map[string]float64)
+	soundexToName := make(map[string]string)
 	for _, details := range data {
 		if details.Country == country && details.City != "" {
-			if currentValue, ok := cityScores[details.City]; !ok {
-				cityScores[details.City] = 1.0
+			metric := smetrics.Soundex(details.City)
+			if currentValue, ok := soundexToName[metric]; ok {
+				if len(details.City) < len(currentValue) {
+					soundexToName[metric] = details.City
+				}
 			} else {
-				cityScores[details.City] = currentValue + 1.0
+				soundexToName[metric] = details.City
 			}
+			cityScores[metric] += 1.0
 		}
 	}
 
-	city := ir.getWinner(cityScores)
+	cityMetric := ir.getWinner(cityScores)
+	city := soundexToName[cityMetric]
 
 	return country, city
 }

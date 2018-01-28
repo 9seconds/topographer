@@ -96,6 +96,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/xrash/smetrics"
+  packages = ["."]
+  revision = "a3153f7040e90324c58c6287535e26a0ac5c1cc1"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   revision = "0efb9460aaf800c6376acf625be2853bceac2e06"
@@ -133,6 +139,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bced2bb8c4bec7ca41e1ea208b6eff20e86dd8c4302a21fcd76dd1a26a95c0ca"
+  inputs-digest = "053abe5f7373b76c218fe56d319d512cc031b2bf3465055a29e5354d69789418"
   solver-name = "gps-cdcl"
   solver-version = 1
