@@ -39,8 +39,6 @@ type DBConfig struct {
 }
 
 type Config struct {
-	Host         string
-	Port         int
 	UpdateEach   duration `toml:"update_each"`
 	Directory    string
 	Databases    map[string]DBConfig
@@ -87,12 +85,6 @@ func validate(conf *Config) error {
 		return errors.Errorf("Unsupported value for precision.")
 	}
 
-	if conf.Host == "" {
-		conf.Host = "127.0.0.1"
-	}
-	if conf.Port == 0 {
-		conf.Port = 8000
-	}
 	if conf.Directory == "" {
 		path, _ := os.Getwd()
 		conf.Directory = path

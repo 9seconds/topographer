@@ -18,8 +18,8 @@ FROM alpine:3.7
 MAINTAINER Sergey Arkhipov <nineseconds@yandex.ru>
 
 ENTRYPOINT ["/topographer"]
-CMD ["/config.toml"]
-EXPOSE 8000
+CMD ["-b", "0.0.0.0", "-p", "80", "/config.toml"]
+EXPOSE 80
 
 RUN set -x \
   && apk add --no-cache --update ca-certificates

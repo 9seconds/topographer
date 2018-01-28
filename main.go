@@ -17,12 +17,22 @@ import (
 var (
 	app = kingpin.New(
 		"topographer",
-		"Fast and lenient IP geolocation service")
+		"Fast and lenient IP geolocation service.")
 
 	debug = app.Flag("debug", "Run in debug mode.").
 		Short('d').
 		Envar("TOPOGRAPHER_DEBUG").
 		Bool()
+	host = app.Flag("host", "Host to bind to.").
+		Short('b').
+		Default("127.0.0.1").
+		Envar("TOPOGRAPHER_HOST").
+		String()
+	port = app.Flag("port", "Port to bind to.").
+		Short('p').
+		Default("8000").
+		Envar("TOPOGRAPHER_PORT").
+		Int()
 	configFile = app.Arg("config-path", "Path to the config.").
 			Required().
 			File()
@@ -40,6 +50,7 @@ func main() {
 	if *debug {
 		log.SetLevel(log.DebugLevel)
 	}
+	hostPort := *host + ":" + strconv.Itoa(*port)
 
 	conf, err := config.Parse(*configFile)
 	if err != nil {
@@ -55,7 +66,6 @@ func main() {
 		}
 	}()
 
-	hostPort := conf.Host + ":" + strconv.Itoa(conf.Port)
 	router := api.MakeServer(pset)
 	http.ListenAndServe(hostPort, router)
 }
