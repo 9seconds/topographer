@@ -58,7 +58,7 @@ func (ir *ipResolveResponseStruct) calculateVerdict(
 	for name, details := range data {
 		if details.Country != "" {
 			if currentValue, ok := countryScores[details.Country]; !ok {
-				countryScores[details.Country] = 0.0
+				countryScores[details.Country] = weights[name]
 			} else {
 				countryScores[details.Country] = currentValue + weights[name]
 			}
@@ -67,12 +67,12 @@ func (ir *ipResolveResponseStruct) calculateVerdict(
 
 	country := ir.getWinner(countryScores)
 	cityScores := make(map[string]float64)
-	for name, details := range data {
+	for _, details := range data {
 		if details.Country == country && details.City != "" {
 			if currentValue, ok := cityScores[details.City]; !ok {
-				cityScores[details.City] = 0.0
+				cityScores[details.City] = 1.0
 			} else {
-				cityScores[details.City] = currentValue + weights[name]
+				cityScores[details.City] = currentValue + 1.0
 			}
 		}
 	}
@@ -89,6 +89,7 @@ func (ir *ipResolveResponseStruct) getWinner(scores map[string]float64) string {
 	for candidate, score := range scores {
 		if score >= currentMax {
 			winner = candidate
+			currentMax = score
 		}
 	}
 

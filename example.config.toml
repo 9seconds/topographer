@@ -1,6 +1,6 @@
 update_each = "6h"
 directory = "/tmp"
-precision = "country"
+precision = "city"
 host = "0.0.0.0"
 port = 8000
 

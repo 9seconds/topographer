@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -45,7 +47,15 @@ func main() {
 	}
 
 	pset := providers.NewProviderSet(conf)
-	pset.Update(true)
+	ticker := time.NewTicker(conf.UpdateEach.Duration)
+	go func() {
+		pset.Update(true)
+		for range ticker.C {
+			pset.Update(false)
+		}
+	}()
+
+	hostPort := conf.Host + ":" + strconv.Itoa(conf.Port)
 	router := api.MakeServer(pset)
-	http.ListenAndServe(":8000", router)
+	http.ListenAndServe(hostPort, router)
 }

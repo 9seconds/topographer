@@ -53,6 +53,10 @@ func (di *DBIP) Update() (bool, error) {
 	if err != nil {
 		return false, errors.Annotate(err, "Cannot download DBIP")
 	}
+	defer func() {
+		rawFile.Close()
+		os.Remove(rawFile.Name())
+	}()
 
 	return di.saveFile(rawFile)
 }
@@ -99,7 +103,7 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) {
 	csvReader := csv.NewReader(gzipFile)
 	csvReader.ReuseRecord = true
 	tree := nradix.NewTree(0)
-	// cache := newDBIPCache(dbipLRUCacheSize)
+	cache := newDBIPCache(dbipLRUCacheSize)
 
 	for {
 		record, err := csvReader.Read()
@@ -124,8 +128,7 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) {
 			continue
 		}
 
-		// geoData := cache.get(country, city)
-		geoData := &GeoResult{Country: country, City: city}
+		geoData := cache.get(country, city)
 		subnets, err := di.getSubnets(startIpStr, finishIpStr)
 		if err != nil {
 			log.WithFields(log.Fields{

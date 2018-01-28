@@ -31,9 +31,7 @@ func (ps *ProviderSet) updateProvider(force bool, name string, attempt int) {
 		"attempt":  attempt,
 	}).Info("Update provider.")
 
-	// needToUpdate, err := provider.Update()
-	needToUpdate := true
-	var err error
+	needToUpdate, err := provider.Update()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"provider": name,

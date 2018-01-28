@@ -87,6 +87,20 @@ func validate(conf *Config) error {
 		return errors.Errorf("Unsupported value for precision.")
 	}
 
+	if conf.Host == "" {
+		conf.Host = "127.0.0.1"
+	}
+	if conf.Port == 0 {
+		conf.Port = 8000
+	}
+	if conf.Directory == "" {
+		path, _ := os.Getwd()
+		conf.Directory = path
+	}
+	if conf.UpdateEach.Duration == time.Duration(0) {
+		conf.UpdateEach.Duration = 6 * time.Hour
+	}
+
 	if stat, err := os.Stat(conf.Directory); err != nil {
 		return errors.Annotatef(err, "Incorrect directory %s", conf.Directory)
 	} else {

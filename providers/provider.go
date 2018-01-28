@@ -183,6 +183,10 @@ func (pr *Provider) downloadURL(url string) (*os.File, error) {
 		return nil, errors.Annotatef(err, "Cannot read from URL %s", url)
 	}
 
+	log.WithFields(log.Fields{
+		"url": url,
+	}).Debug("Finish downloading.")
+
 	tempFile.Seek(0, 0)
 
 	return tempFile, nil
