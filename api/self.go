@@ -21,5 +21,4 @@ func selfResolveIP(w http.ResponseWriter, r *http.Request) {
 		response.Build(results)
 	}
 	json.NewEncoder(w).Encode(response)
-
 }
