@@ -115,7 +115,11 @@ func (i2l *IP2Location) resolveIP(ip net.IP) GeoResult {
 	result := ip2location.Get_all(ip.String())
 	i2l.dbLock.Unlock()
 
-	georesult := GeoResult{Country: strings.ToLower(result.Country_short)}
+	country := strings.ToLower(result.Country_short)
+	if country == "invalid database file." {
+		country = ""
+	}
+	georesult := GeoResult{Country: country}
 
 	if i2l.precision == config.PRECISION_CITY && !strings.Contains(result.City,
 		"This parameter is unavailable") {

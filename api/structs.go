@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net"
 
+	"github.com/9seconds/topographer/providers"
 	"github.com/juju/errors"
 )
 
@@ -18,7 +19,80 @@ type providerInfoItemStruct struct {
 }
 
 type ipResolveResponseStruct struct {
-	Results map[string]ipResolveItemStruct `json:"results"`
+	Results map[string]*ipResolveItemStruct `json:"results"`
+}
+
+func (ir *ipResolveResponseStruct) Build(resolveResults []providers.ResolveResult) {
+	ir.Results = make(map[string]*ipResolveItemStruct)
+	weights := make(map[string]float64)
+
+	for _, rres := range resolveResults {
+		weights[rres.Provider] = rres.Weight
+
+		for ip, data := range rres.Results {
+			if _, ok := ir.Results[ip]; !ok {
+				ir.Results[ip] = &ipResolveItemStruct{
+					Details: make(map[string]ipResolveDetailsItemStruct),
+				}
+			}
+
+			ir.Results[ip].Details[rres.Provider] = ipResolveDetailsItemStruct{
+				Country: data.Country,
+				City:    data.City,
+			}
+		}
+	}
+
+	for _, item := range ir.Results {
+		country, city := ir.calculateVerdict(weights, item.Details)
+		item.City = city
+		item.Country = country
+	}
+}
+
+func (ir *ipResolveResponseStruct) calculateVerdict(
+	weights map[string]float64,
+	data map[string]ipResolveDetailsItemStruct) (string, string) {
+	countryScores := make(map[string]float64)
+
+	for name, details := range data {
+		if details.Country != "" {
+			if currentValue, ok := countryScores[details.Country]; !ok {
+				countryScores[details.Country] = 0.0
+			} else {
+				countryScores[details.Country] = currentValue + weights[name]
+			}
+		}
+	}
+
+	country := ir.getWinner(countryScores)
+	cityScores := make(map[string]float64)
+	for name, details := range data {
+		if details.Country == country && details.City != "" {
+			if currentValue, ok := cityScores[details.City]; !ok {
+				cityScores[details.City] = 0.0
+			} else {
+				cityScores[details.City] = currentValue + weights[name]
+			}
+		}
+	}
+
+	city := ir.getWinner(cityScores)
+
+	return country, city
+}
+
+func (ir *ipResolveResponseStruct) getWinner(scores map[string]float64) string {
+	winner := ""
+	currentMax := 0.0
+
+	for candidate, score := range scores {
+		if score >= currentMax {
+			winner = candidate
+		}
+	}
+
+	return winner
 }
 
 type ipResolveDetailsItemStruct struct {

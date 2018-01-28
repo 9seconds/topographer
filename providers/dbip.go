@@ -99,7 +99,7 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) {
 	csvReader := csv.NewReader(gzipFile)
 	csvReader.ReuseRecord = true
 	tree := nradix.NewTree(0)
-	cache := newDBIPCache(dbipLRUCacheSize)
+	// cache := newDBIPCache(dbipLRUCacheSize)
 
 	for {
 		record, err := csvReader.Read()
@@ -124,7 +124,8 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) {
 			continue
 		}
 
-		geoData := cache.get(country, city)
+		// geoData := cache.get(country, city)
+		geoData := &GeoResult{Country: country, City: city}
 		subnets, err := di.getSubnets(startIpStr, finishIpStr)
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -168,7 +169,9 @@ func (di *DBIP) Resolve(ips []net.IP) ResolveResult {
 			stringIp := ip.String()
 			result := GeoResult{}
 			if data, err := di.db.FindCIDR(stringIp + "/32"); err == nil {
-				result = *(data.(*GeoResult))
+				if converted, ok := data.(*GeoResult); ok {
+					result = *converted
+				}
 			}
 			results[stringIp] = result
 		}

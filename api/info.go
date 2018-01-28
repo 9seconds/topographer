@@ -28,6 +28,5 @@ func providerInfo(w http.ResponseWriter, r *http.Request) {
 		response.Results[name] = item
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	json.NewEncoder(w).Encode(response)
 }

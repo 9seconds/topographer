@@ -31,7 +31,9 @@ func (ps *ProviderSet) updateProvider(force bool, name string, attempt int) {
 		"attempt":  attempt,
 	}).Info("Update provider.")
 
-	needToUpdate, err := provider.Update()
+	// needToUpdate, err := provider.Update()
+	needToUpdate := true
+	var err error
 	if err != nil {
 		log.WithFields(log.Fields{
 			"provider": name,
@@ -69,22 +71,25 @@ func (ps *ProviderSet) updateProvider(force bool, name string, attempt int) {
 	}
 }
 
-func (ps *ProviderSet) Resolve(ips []net.IP, useProviders map[string]bool) []ResolveResult {
+func (ps *ProviderSet) Resolve(ips []net.IP, useProviders []string) []ResolveResult {
 	var wg sync.WaitGroup
 	results := make([]ResolveResult, 0, len(ps.Providers))
 	channel := make(chan ResolveResult, len(ps.Providers))
 	defer close(channel)
 
+	providerFilter := make(map[string]bool)
+	for _, v := range useProviders {
+		providerFilter[v] = true
+	}
 	if len(useProviders) == 0 {
-		useProviders = make(map[string]bool)
 		for k := range ps.Providers {
-			useProviders[k] = true
+			providerFilter[k] = true
 		}
 	}
 
 	resultsCount := 0
 	for k, v := range ps.Providers {
-		if _, ok := useProviders[k]; ok {
+		if _, ok := providerFilter[k]; ok {
 			wg.Add(1)
 			resultsCount += 1
 
