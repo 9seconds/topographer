@@ -122,7 +122,7 @@ func (i2l *IP2Location) resolveIP(ip net.IP) GeoResult {
 	georesult := GeoResult{Country: country}
 
 	if i2l.precision == config.PRECISION_CITY && !strings.Contains(result.City,
-		"This parameter is unavailable") && city != "-" {
+		"This parameter is unavailable") && result.City != "-" {
 		georesult.City = result.City
 	}
 

@@ -48,26 +48,32 @@ type GeoProvider interface {
 	Update() (bool, error)
 }
 
-func (pr *Provider) reopenSafe(lastUpdated time.Time, callback func() error) error {
+func (pr *Provider) reopenSafe(lastUpdated time.Time, callback func() error) (err error) {
+	pr.available = false
 	pr.updateLock.Lock()
-	defer pr.updateLock.Unlock()
+	defer func() {
+		pr.updateLock.Unlock()
+		if err == nil {
+			pr.available = true
+		}
+	}()
 
-	if err := callback(); err != nil {
+	if err = callback(); err != nil {
 		pr.available = false
 		return err
 	}
 	pr.lastUpdated = lastUpdated
 	pr.available = true
 
-	return nil
+	return
 }
 
 func (pr *Provider) resolveSafe(callback func() map[string]GeoResult) ResolveResult {
-	pr.updateLock.RLock()
-	defer pr.updateLock.RUnlock()
-
 	results := make(map[string]GeoResult)
+
 	if pr.available {
+		pr.updateLock.RLock()
+		defer pr.updateLock.RUnlock()
 		results = callback()
 	} else {
 		log.WithFields(log.Fields{
