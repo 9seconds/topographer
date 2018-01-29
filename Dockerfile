@@ -1,4 +1,18 @@
-# Build Stage
+# This Dockerfile builds topographer image based on Alpine Linux.
+# This is minimal image as possible
+#
+# To run this service you need to:
+#     1. Mount config to /config.toml within a container
+#     2. Propagate TOPOGRAPHER_IP2LOCATION_DOWNLOAD_TOKEN environment
+#        variable with ip2location token to the container (you can get
+#        this token after registration at ip2location.com)
+#     3. Map exposed 80 port to any port you like
+#
+# Please visit https://github.com/9seconds/topographer for the details.
+
+###############################################################################
+# BUILD STAGE
+
 FROM golang:alpine AS build-env
 
 RUN set -x \
@@ -13,9 +27,11 @@ RUN set -x \
   && go build -o topographer
 
 
-# Package stage
+###############################################################################
+# PACKAGE STAGE
+
 FROM alpine:3.7
-MAINTAINER Sergey Arkhipov <nineseconds@yandex.ru>
+LABEL maintainer="Sergey Arkhipov <nineseconds@yandex.ru>" version="0.0.1"
 
 ENTRYPOINT ["/topographer"]
 CMD ["-b", "0.0.0.0", "-p", "80", "/config.toml"]
