@@ -16,8 +16,8 @@
 [[projects]]
   name = "github.com/PuerkitoBio/goquery"
   packages = ["."]
-  revision = "a41cf096e64e3752d7683898d5746bc0b98ee213"
-  version = "v1.2.0"
+  revision = "09540e565986583836b5fc792fe951ec5fd201dd"
+  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -62,7 +62,7 @@
     ".",
     "simplelru"
   ]
-  revision = "0a025b7e63adc15a622f29b0b2c4c3848243bbf6"
+  revision = "0fb14efe8c47ae851c0034ed7a448854d3d34cf3"
 
 [[projects]]
   branch = "master"
@@ -104,7 +104,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "0efb9460aaf800c6376acf625be2853bceac2e06"
+  revision = "1875d0a70c90e57f11972aefd42276df65e895b9"
 
 [[projects]]
   branch = "master"
@@ -113,7 +113,7 @@
     "html",
     "html/atom"
   ]
-  revision = "0ed95abb35c445290478a5348a7b38bb154135fd"
+  revision = "2fb46b16b8dda405028c50f7c7f0f9dd1fa6bfb1"
 
 [[projects]]
   branch = "master"
@@ -122,7 +122,7 @@
     "unix",
     "windows"
   ]
-  revision = "ff2a66f350cefa5c93a634eadb5d25bb60c85a9c"
+  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
@@ -139,6 +139,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "053abe5f7373b76c218fe56d319d512cc031b2bf3465055a29e5354d69789418"
+  inputs-digest = "6014629f4cac6b2d9b3d94984d04318204cda83ef1a6dbf0b7ea943c57dc6236"
   solver-name = "gps-cdcl"
   solver-version = 1
