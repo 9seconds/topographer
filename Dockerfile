@@ -24,7 +24,7 @@ ADD . /go/src/github.com/9seconds/topographer
 RUN set -x \
   && cd /go/src/github.com/9seconds/topographer \
   && dep ensure \
-  && go build -o topographer
+  && go build -ldflags="-s -w" -o topographer
 
 
 ###############################################################################
