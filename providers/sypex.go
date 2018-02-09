@@ -106,7 +106,7 @@ func (sx *Sypex) Resolve(ips []net.IP) ResolveResult {
 						}
 					}
 				}
-				if sx.precision == config.PRECISION_CITY {
+				if sx.precision == config.PrecisionCity {
 					if cityData, ok := info["city"]; ok {
 						if cityMap, ok := cityData.(map[string]interface{}); ok {
 							if cityName, ok := cityMap["name_en"]; ok {

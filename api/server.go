@@ -11,12 +11,15 @@ import (
 	"github.com/go-chi/chi/middleware"
 )
 
+type contextKey string
+
+// MakeServer builds http router with connected functions
 func MakeServer(set *providers.ProviderSet) *chi.Mux {
 	router := chi.NewRouter()
 
 	ctxProviderSet := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), "providers", set)
+			ctx := context.WithValue(r.Context(), contextKey("providers"), set)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

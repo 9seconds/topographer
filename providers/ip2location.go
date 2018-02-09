@@ -40,7 +40,7 @@ func (i2l *IP2Location) Update() (bool, error) {
 
 	params := url.Values{}
 	params.Set("token", token)
-	if i2l.precision == config.PRECISION_COUNTRY {
+	if i2l.precision == config.PrecisionCountry {
 		params.Set("file", ip2locationDBCodeCountry)
 	} else {
 		params.Set("file", ip2locationDBCodeCity)
@@ -121,7 +121,8 @@ func (i2l *IP2Location) resolveIP(ip net.IP) GeoResult {
 	}
 	georesult := GeoResult{Country: country}
 
-	if i2l.precision == config.PRECISION_CITY && !strings.Contains(result.City,
+	if i2l.precision == config.PrecisionCity && !strings.Contains(
+		result.City,
 		"This parameter is unavailable") && result.City != "-" {
 		georesult.City = result.City
 	}

@@ -5,12 +5,14 @@ import (
 	"net"
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/9seconds/topographer/providers"
 )
 
 func selfResolveIP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	set := ctx.Value("providers").(*providers.ProviderSet)
+	set := ctx.Value(contextKey("providers")).(*providers.ProviderSet)
 
 	response := ipResolveResponseStruct{
 		Results: make(map[string]*ipResolveItemStruct),
@@ -20,5 +22,8 @@ func selfResolveIP(w http.ResponseWriter, r *http.Request) {
 		results := set.Resolve([]net.IP{net.ParseIP(r.RemoteAddr)}, []string{})
 		response.Build(results)
 	}
-	json.NewEncoder(w).Encode(response)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Errorf("Cannot write response: %s", err.Error())
+	}
 }

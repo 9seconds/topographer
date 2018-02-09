@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/9seconds/topographer/providers"
 )
 
 func resolveIPs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	set := ctx.Value("providers").(*providers.ProviderSet)
+	set := ctx.Value(contextKey("providers")).(*providers.ProviderSet)
 
 	requestBody := ipResolveRequestStruct{}
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
@@ -26,5 +28,7 @@ func resolveIPs(w http.ResponseWriter, r *http.Request) {
 	results := set.Resolve(requestBody.Ips, requestBody.Providers)
 	response.Build(results)
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Errorf("Cannot write response: %s", err.Error())
+	}
 }

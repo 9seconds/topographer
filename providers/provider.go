@@ -19,27 +19,35 @@ import (
 	"github.com/juju/errors"
 )
 
+// Provider is a structure which represents a basic common data for every
+// provider of geolocation information. Basically, all other providers
+// should be aggregated with this type.
 type Provider struct {
-	available       bool
 	directory       string
 	dbname          string
+	available       bool
 	lastUpdated     time.Time
 	downloadTimeout time.Duration
 	updateLock      *sync.RWMutex
 	precision       config.Precision
 }
 
+// GeoResult represents a basic response on IP geolocation.
 type GeoResult struct {
 	Country string
 	City    string
 }
 
+// ResolveResult is a overall result of resolving a list of IPs
+// with the given provider sign and its weight.
 type ResolveResult struct {
 	Provider string
 	Weight   float64
 	Results  map[string]GeoResult
 }
 
+// GeoProvider is the interface which defines a methods each provider
+// has to provide or support. Consider it as a public interface.
 type GeoProvider interface {
 	IsAvailable() bool
 	LastUpdated() time.Time
@@ -87,14 +95,19 @@ func (pr *Provider) resolveSafe(callback func() map[string]GeoResult) ResolveRes
 	}
 }
 
+// LastUpdated returns a time when provider updated its database last time
+// (reopened with fresh data, not only just downloading).
 func (pr *Provider) LastUpdated() time.Time {
 	return pr.lastUpdated
 }
 
+// IsAvailable tells is provider is available for IP geolocation resolving
+// or not.
 func (pr *Provider) IsAvailable() bool {
 	return pr.available
 }
 
+// FilePath returns a path to the database on the disk.
 func (pr *Provider) FilePath() string {
 	return filepath.Join(pr.directory, pr.dbname)
 }
@@ -105,8 +118,10 @@ func (pr *Provider) saveFile(newFile io.Reader) (bool, error) {
 		if err != nil {
 			return false, errors.Annotatef(err, "Cannot create file %s", pr.FilePath())
 		}
-		defer file.Close()
-		io.Copy(file, newFile)
+		defer file.Close() // nolint
+		if _, err = io.Copy(file, newFile); err != nil {
+			return false, errors.Annotate(err, "Cannot copy to the file")
+		}
 
 		return true, nil
 	}
@@ -116,13 +131,15 @@ func (pr *Provider) saveFile(newFile io.Reader) (bool, error) {
 		return false, errors.Annotate(err, "Cannot create temporary file")
 	}
 	defer func() {
-		tempFile.Close()
-		os.Remove(tempFile.Name())
+		tempFile.Close()           // nolint
+		os.Remove(tempFile.Name()) // nolint
 	}()
 
 	checksum := sha1.New()
 	writer := io.MultiWriter(checksum, tempFile)
-	io.Copy(writer, newFile)
+	if _, err = io.Copy(writer, newFile); err != nil {
+		return false, errors.Annotate(err, "Cannot copy to the new file")
+	}
 
 	currentFile, err := os.Open(pr.FilePath())
 	if err != nil {
@@ -130,8 +147,10 @@ func (pr *Provider) saveFile(newFile io.Reader) (bool, error) {
 	}
 
 	currentCheckSum := sha1.New()
-	io.Copy(currentCheckSum, currentFile)
-	currentFile.Close()
+	if _, err = io.Copy(currentCheckSum, currentFile); err != nil {
+		return false, errors.Annotate(err, "cannot copy to the new file")
+	}
+	currentFile.Close() // nolint
 
 	if bytes.Compare(currentCheckSum.Sum(nil), checksum.Sum(nil)) != 0 {
 		log.WithFields(log.Fields{
@@ -140,7 +159,7 @@ func (pr *Provider) saveFile(newFile io.Reader) (bool, error) {
 			"path":             pr.FilePath(),
 		}).Info("Update database.")
 
-		tempFile.Close()
+		tempFile.Close() // nolint
 		if err = os.Rename(tempFile.Name(), pr.FilePath()); err != nil {
 			return false, errors.Annotatef(err, "Cannot move new file to correct location %s", pr.FilePath())
 		}
@@ -164,13 +183,13 @@ func (pr *Provider) downloadURL(url string) (*os.File, error) {
 	client := http.Client{Timeout: pr.downloadTimeout}
 	resp, err := client.Get(url)
 	if err != nil {
-		tempFile.Close()
-		os.Remove(tempFile.Name())
+		tempFile.Close()           // nolint
+		os.Remove(tempFile.Name()) // nolint
 		return nil, errors.Annotatef(err, "Cannot access URL %s", url)
 	}
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
+		io.Copy(ioutil.Discard, resp.Body) // nolint
+		resp.Body.Close()                  // nolint
 	}()
 
 	log.WithFields(log.Fields{
@@ -183,9 +202,9 @@ func (pr *Provider) downloadURL(url string) (*os.File, error) {
 		return nil, errors.Annotatef(err, "URL gave status code %d", resp.StatusCode)
 	}
 
-	if _, err := io.Copy(tempFile, resp.Body); err != nil {
-		tempFile.Close()
-		os.Remove(tempFile.Name())
+	if _, err = io.Copy(tempFile, resp.Body); err != nil {
+		tempFile.Close()           // nolint
+		os.Remove(tempFile.Name()) // nolint
 		return nil, errors.Annotatef(err, "Cannot read from URL %s", url)
 	}
 
@@ -193,7 +212,9 @@ func (pr *Provider) downloadURL(url string) (*os.File, error) {
 		"url": url,
 	}).Debug("Finish downloading.")
 
-	tempFile.Seek(0, 0)
+	if _, err = tempFile.Seek(0, 0); err != nil {
+		return nil, errors.Annotate(err, "Cannot seek to the start of the file")
+	}
 
 	return tempFile, nil
 }

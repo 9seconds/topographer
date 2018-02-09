@@ -30,7 +30,7 @@ type MaxMind struct {
 
 func (mm *MaxMind) Update() (bool, error) {
 	url := maxMindDBURLCountry
-	if mm.precision == config.PRECISION_CITY {
+	if mm.precision == config.PrecisionCity {
 		url = maxMindDBURLCity
 	}
 
@@ -94,9 +94,9 @@ func (mm *MaxMind) Resolve(ips []net.IP) ResolveResult {
 
 		for _, ip := range ips {
 			switch mm.precision {
-			case config.PRECISION_COUNTRY:
+			case config.PrecisionCountry:
 				results[ip.String()] = mm.resolveCountryResult(ip)
-			case config.PRECISION_CITY:
+			case config.PrecisionCity:
 				results[ip.String()] = mm.resolveCityResult(ip)
 			}
 		}

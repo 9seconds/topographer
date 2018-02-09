@@ -1,6 +1,7 @@
 package config
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -10,7 +11,9 @@ import (
 	"github.com/juju/errors"
 )
 
-var VALID_DATABASES = map[string]bool{
+// ValidDatabases maps supported database number to 'some' value. It does not
+// matter which value, map here is only for the faster lookup.
+var ValidDatabases = map[string]bool{
 	"dbip":        true,
 	"ip2location": true,
 	"maxmind":     true,
@@ -26,18 +29,24 @@ func (dur *duration) UnmarshalText(text []byte) (err error) {
 	return
 }
 
+// Precision is a type for geolocation precision, per country or per city
 type Precision uint8
 
 const (
-	PRECISION_COUNTRY = Precision(iota)
-	PRECISION_CITY
+	// PrecisionCountry defines geolocation precision up to country.
+	PrecisionCountry = Precision(iota)
+
+	// PrecisionCity defines geolocation precision up to city.
+	PrecisionCity
 )
 
+// DBConfig is a mapping of configuration file section to the db config.
 type DBConfig struct {
 	Enabled bool
 	Weight  float64
 }
 
+// Config is a configuration read from the file.
 type Config struct {
 	UpdateEach   duration `toml:"update_each"`
 	Directory    string
@@ -46,7 +55,8 @@ type Config struct {
 	Precision    Precision
 }
 
-func Parse(file *os.File) (*Config, error) {
+// Parse parses given configuration file and returns instance of the config.
+func Parse(file io.Reader) (*Config, error) {
 	conf := &Config{}
 
 	buf, err := ioutil.ReadAll(file)
@@ -54,7 +64,7 @@ func Parse(file *os.File) (*Config, error) {
 		return nil, errors.Annotate(err, "Cannot read config file")
 	}
 
-	if _, err := toml.Decode(string(buf), conf); err != nil {
+	if _, err = toml.Decode(string(buf), conf); err != nil {
 		return nil, errors.Annotate(err, "Cannot parse config file")
 	}
 
@@ -65,9 +75,9 @@ func Parse(file *os.File) (*Config, error) {
 	return conf, nil
 }
 
-func validate(conf *Config) error {
+func validate(conf *Config) error { // nolint: gocyclo
 	for k, v := range conf.Databases {
-		if _, ok := VALID_DATABASES[k]; !ok {
+		if _, ok := ValidDatabases[k]; !ok {
 			return errors.Errorf("Unknown database %s", k)
 		}
 		if v.Weight < 0.0 {
@@ -78,15 +88,18 @@ func validate(conf *Config) error {
 
 	switch strings.ToLower(conf.PrecisionStr) {
 	case "", "country":
-		conf.Precision = PRECISION_COUNTRY
+		conf.Precision = PrecisionCountry
 	case "city":
-		conf.Precision = PRECISION_CITY
+		conf.Precision = PrecisionCity
 	default:
 		return errors.Errorf("Unsupported value for precision.")
 	}
 
 	if conf.Directory == "" {
-		path, _ := os.Getwd()
+		path, err := os.Getwd()
+		if err != nil {
+			return errors.Annotate(err, "Cannot read current directory")
+		}
 		conf.Directory = path
 	}
 	if conf.UpdateEach.Duration == time.Duration(0) {
@@ -95,10 +108,8 @@ func validate(conf *Config) error {
 
 	if stat, err := os.Stat(conf.Directory); err != nil {
 		return errors.Annotatef(err, "Incorrect directory %s", conf.Directory)
-	} else {
-		if !stat.IsDir() {
-			return errors.Annotatef(err, "Incorrect directory %s", conf.Directory)
-		}
+	} else if !stat.IsDir() {
+		return errors.Annotatef(err, "Incorrect directory %s", conf.Directory)
 	}
 
 	return nil

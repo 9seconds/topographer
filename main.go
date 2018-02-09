@@ -67,5 +67,7 @@ func main() {
 	}()
 
 	router := api.MakeServer(pset)
-	http.ListenAndServe(hostPort, router)
+	if err := http.ListenAndServe(hostPort, router); err != nil {
+		log.Fatalf(err.Error())
+	}
 }

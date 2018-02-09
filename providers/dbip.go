@@ -40,7 +40,7 @@ type DBIP struct {
 
 func (di *DBIP) Update() (bool, error) {
 	initialUrl := dbipDBURLCountry
-	if di.precision == config.PRECISION_CITY {
+	if di.precision == config.PrecisionCity {
 		initialUrl = dbipDBURLCity
 	}
 
@@ -118,7 +118,7 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) {
 		finishIpStr := record[dbipIdxFinishIP]
 		country := strings.ToLower(record[dbipIdxCountry])
 		city := ""
-		if di.precision == config.PRECISION_CITY {
+		if di.precision == config.PrecisionCity {
 			city = record[dbipIdxCity]
 		}
 
