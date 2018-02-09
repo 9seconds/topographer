@@ -32,30 +32,32 @@ const (
 	dbipLRUCacheSize = 256
 )
 
+// DBIP presents a structure for db-ip.com provider.
 type DBIP struct {
 	Provider
 
 	db *nradix.Tree
 }
 
+// Update updates database.
 func (di *DBIP) Update() (bool, error) {
-	initialUrl := dbipDBURLCountry
+	initialURL := dbipDBURLCountry
 	if di.precision == config.PrecisionCity {
-		initialUrl = dbipDBURLCity
+		initialURL = dbipDBURLCity
 	}
 
-	archiveUrl, err := di.updateGetDownloadLink(initialUrl)
+	archiveURL, err := di.updateGetDownloadLink(initialURL)
 	if err != nil {
 		return false, errors.Annotate(err, "Cannot get download URL")
 	}
 
-	rawFile, err := di.downloadURL(archiveUrl)
+	rawFile, err := di.downloadURL(archiveURL)
 	if err != nil {
 		return false, errors.Annotate(err, "Cannot download DBIP")
 	}
 	defer func() {
-		rawFile.Close()
-		os.Remove(rawFile.Name())
+		rawFile.Close()           // nolint
+		os.Remove(rawFile.Name()) // nolint
 	}()
 
 	return di.saveFile(rawFile)
@@ -75,6 +77,7 @@ func (di *DBIP) updateGetDownloadLink(url string) (string, error) {
 	return url, nil
 }
 
+// Reopen reopens database.
 func (di *DBIP) Reopen(lastUpdated time.Time) (err error) {
 	return di.reopenSafe(lastUpdated, func() error {
 		di.db = nil
@@ -88,7 +91,7 @@ func (di *DBIP) Reopen(lastUpdated time.Time) (err error) {
 	})
 }
 
-func (di *DBIP) createDatabase() (*nradix.Tree, error) {
+func (di *DBIP) createDatabase() (*nradix.Tree, error) { // nolint: gocyclo
 	rawFile, err := os.Open(di.FilePath())
 	if err != nil {
 		return nil, errors.Annotate(err, "Cannot open database file")
@@ -114,26 +117,26 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) {
 			return nil, errors.Annotate(err, "Error during parsing CSV")
 		}
 
-		startIpStr := record[dbipIdxStartIP]
-		finishIpStr := record[dbipIdxFinishIP]
+		startIPStr := record[dbipIdxStartIP]
+		finishIPStr := record[dbipIdxFinishIP]
 		country := strings.ToLower(record[dbipIdxCountry])
 		city := ""
 		if di.precision == config.PrecisionCity {
 			city = record[dbipIdxCity]
 		}
 
-		startIp := net.ParseIP(startIpStr)
-		finishIp := net.ParseIP(finishIpStr)
-		if country == "zz" || startIp == nil || startIp.To4() == nil || finishIp == nil || finishIp.To4() == nil {
+		startIP := net.ParseIP(startIPStr)
+		finishIP := net.ParseIP(finishIPStr)
+		if country == "zz" || startIP == nil || startIP.To4() == nil || finishIP == nil || finishIP.To4() == nil {
 			continue
 		}
 
 		geoData := cache.get(country, city)
-		subnets, err := di.getSubnets(startIpStr, finishIpStr)
+		subnets, err := di.getSubnets(startIPStr, finishIPStr)
 		if err != nil {
 			log.WithFields(log.Fields{
-				"startIp":  startIpStr,
-				"finishIp": finishIpStr,
+				"startIP":  startIPStr,
+				"finishIP": finishIPStr,
 				"err":      err,
 			}).Warn("Cannot parse ip range")
 		} else {
@@ -150,8 +153,8 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) {
 
 func (di *DBIP) getSubnets(start, finish string) (subnets []string, err error) {
 	defer func() {
-		if err := recover(); err != nil {
-			switch x := err.(type) {
+		if rec := recover(); rec != nil {
+			switch x := rec.(type) {
 			case string:
 				err = errors.Annotate(errors.New(x), "Incorrect subnets")
 			case error:
@@ -164,25 +167,27 @@ func (di *DBIP) getSubnets(start, finish string) (subnets []string, err error) {
 	return
 }
 
+// Resolve resolves a list of the given IPs
 func (di *DBIP) Resolve(ips []net.IP) ResolveResult {
 	return di.resolveSafe(func() map[string]GeoResult {
 		results := make(map[string]GeoResult)
 
 		for _, ip := range ips {
-			stringIp := ip.String()
+			stringIP := ip.String()
 			result := GeoResult{}
-			if data, err := di.db.FindCIDR(stringIp + "/32"); err == nil {
+			if data, err := di.db.FindCIDR(stringIP + "/32"); err == nil {
 				if converted, ok := data.(*GeoResult); ok {
 					result = *converted
 				}
 			}
-			results[stringIp] = result
+			results[stringIP] = result
 		}
 
 		return results
 	})
 }
 
+// NewDBIP returns new dbip geolocation provider structure.
 func NewDBIP(conf *config.Config) *DBIP {
 	return &DBIP{
 		Provider: Provider{

@@ -23,13 +23,13 @@ import (
 // provider of geolocation information. Basically, all other providers
 // should be aggregated with this type.
 type Provider struct {
-	directory       string
 	dbname          string
-	available       bool
-	lastUpdated     time.Time
-	downloadTimeout time.Duration
+	directory       string
 	updateLock      *sync.RWMutex
+	downloadTimeout time.Duration
+	lastUpdated     time.Time
 	precision       config.Precision
+	available       bool
 }
 
 // GeoResult represents a basic response on IP geolocation.
@@ -152,7 +152,7 @@ func (pr *Provider) saveFile(newFile io.Reader) (bool, error) {
 	}
 	currentFile.Close() // nolint
 
-	if bytes.Compare(currentCheckSum.Sum(nil), checksum.Sum(nil)) != 0 {
+	if !bytes.Equal(currentCheckSum.Sum(nil), checksum.Sum(nil)) {
 		log.WithFields(log.Fields{
 			"current_checksum": hex.EncodeToString(currentCheckSum.Sum(nil)),
 			"new_checksum":     hex.EncodeToString(checksum.Sum(nil)),
