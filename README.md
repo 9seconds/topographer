@@ -1,6 +1,8 @@
 Topographer
 ===========
 
+[![Build Status](https://travis-ci.org/9seconds/topographer.svg?branch=master)](https://travis-ci.org/9seconds/topographer)
+
 Fast and lenient self-hosted IP geolocation service.
 
 Sometimes you need to detect regions and cities of different IPs. There
