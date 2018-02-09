@@ -16,15 +16,14 @@
 FROM golang:alpine AS build-env
 
 RUN set -x \
-  && apk --update add git \
-  && go get -u github.com/golang/dep/cmd/dep
+  && apk --update add git make
 
 ADD . /go/src/github.com/9seconds/topographer
 
 RUN set -x \
   && cd /go/src/github.com/9seconds/topographer \
-  && dep ensure \
-  && go build -ldflags="-s -w" -o topographer
+  && make deps \
+  && make
 
 
 ###############################################################################
