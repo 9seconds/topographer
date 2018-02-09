@@ -22,7 +22,7 @@ const (
 	maxMindDBURLCity    = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz"
 )
 
-// MaxMind is a structure for Sypex geolocation provider resolving.
+// MaxMind is a structure for MaxMind geolocation provider resolving.
 type MaxMind struct {
 	Provider
 

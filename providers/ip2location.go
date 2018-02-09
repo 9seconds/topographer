@@ -23,15 +23,17 @@ const (
 
 	ip2locationDBURL = "https://www.ip2location.com/download/"
 
-	ip2locationTokenEnvName = "TOPOGRAPHER_IP2LOCATION_DOWNLOAD_TOKEN"
+	ip2locationTokenEnvName = "TOPOGRAPHER_IP2LOCATION_DOWNLOAD_TOKEN" // nolint: gas
 )
 
+// IP2Location is a structure for IP2Location geolocation provider resolving.
 type IP2Location struct {
 	Provider
 
 	dbLock *sync.Mutex
 }
 
+// Update updates database.
 func (i2l *IP2Location) Update() (bool, error) {
 	token, ok := os.LookupEnv(ip2locationTokenEnvName)
 	if !ok {
@@ -51,8 +53,8 @@ func (i2l *IP2Location) Update() (bool, error) {
 		return false, errors.Annotatef(err, "Cannot update IP2Location DB")
 	}
 	defer func() {
-		rawFile.Close()
-		os.Remove(rawFile.Name())
+		rawFile.Close()           // nolint
+		os.Remove(rawFile.Name()) // nolint
 	}()
 
 	rfStat, err := rawFile.Stat()
@@ -77,19 +79,23 @@ func (i2l *IP2Location) Update() (bool, error) {
 
 		extension := filepath.Ext(zfile.Name)
 		if strings.ToLower(extension) == ".bin" {
-			if opened, err := zfile.Open(); err != nil {
+			opened, err := zfile.Open()
+			if err != nil {
 				return false, errors.Annotate(err, "Cannot extract file from archive")
-			} else {
-				return i2l.saveFile(opened)
 			}
+			return i2l.saveFile(opened)
 		}
 	}
 
 	return false, errors.Errorf("Cannot find required file")
 }
 
+// Reopen reopens MaxMind database.
 func (i2l *IP2Location) Reopen(lastUpdated time.Time) (err error) {
 	return i2l.reopenSafe(lastUpdated, func() error {
+		i2l.dbLock.Lock()
+		defer i2l.dbLock.Unlock()
+
 		if i2l.available {
 			ip2location.Close()
 		}
@@ -100,6 +106,7 @@ func (i2l *IP2Location) Reopen(lastUpdated time.Time) (err error) {
 	})
 }
 
+// Resolve resolves a list of the given IPs
 func (i2l *IP2Location) Resolve(ips []net.IP) ResolveResult {
 	return i2l.resolveSafe(func() map[string]GeoResult {
 		results := make(map[string]GeoResult)
@@ -130,6 +137,7 @@ func (i2l *IP2Location) resolveIP(ip net.IP) GeoResult {
 	return georesult
 }
 
+// NewIP2Location returns new instance of IP2Location
 func NewIP2Location(conf *config.Config) *IP2Location {
 	return &IP2Location{
 		Provider: Provider{
