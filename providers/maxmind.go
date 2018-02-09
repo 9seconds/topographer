@@ -22,12 +22,14 @@ const (
 	maxMindDBURLCity    = "http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz"
 )
 
+// MaxMind is a structure for Sypex geolocation provider resolving.
 type MaxMind struct {
 	Provider
 
 	db *maxminddb.Reader
 }
 
+// Update updates database.
 func (mm *MaxMind) Update() (bool, error) {
 	url := maxMindDBURLCountry
 	if mm.precision == config.PrecisionCity {
@@ -39,15 +41,15 @@ func (mm *MaxMind) Update() (bool, error) {
 		return false, errors.Annotatef(err, "Cannot update MaxMind DB")
 	}
 	defer func() {
-		rawFile.Close()
-		os.Remove(rawFile.Name())
+		rawFile.Close()           // nolint
+		os.Remove(rawFile.Name()) // nolint
 	}()
 
 	gzipReader, err := gzip.NewReader(rawFile)
 	if err != nil {
 		return false, errors.Annotatef(err, "Cannot create GZIP reader")
 	}
-	defer gzipReader.Close()
+	defer gzipReader.Close() // nolint
 
 	tarReader := tar.NewReader(gzipReader)
 	for {
@@ -72,6 +74,7 @@ func (mm *MaxMind) Update() (bool, error) {
 	}
 }
 
+// Reopen reopens MaxMind database.
 func (mm *MaxMind) Reopen(lastUpdated time.Time) (err error) {
 	return mm.reopenSafe(lastUpdated, func() error {
 		db, err := maxminddb.Open(mm.FilePath())
@@ -80,7 +83,9 @@ func (mm *MaxMind) Reopen(lastUpdated time.Time) (err error) {
 		}
 
 		if mm.db != nil {
-			mm.db.Close()
+			if err = mm.db.Close(); err != nil {
+				return errors.Annotate(err, "Cannot close database")
+			}
 		}
 		mm.db = db
 
@@ -88,6 +93,7 @@ func (mm *MaxMind) Reopen(lastUpdated time.Time) (err error) {
 	})
 }
 
+// Resolve resolves a list of the given IPs
 func (mm *MaxMind) Resolve(ips []net.IP) ResolveResult {
 	return mm.resolveSafe(func() map[string]GeoResult {
 		results := make(map[string]GeoResult)
@@ -138,6 +144,7 @@ func (mm *MaxMind) resolveCityResult(ip net.IP) GeoResult {
 	return result
 }
 
+// NewMaxMind returns new Sypex geolocation provider structure.
 func NewMaxMind(conf *config.Config) *MaxMind {
 	return &MaxMind{
 		Provider: Provider{

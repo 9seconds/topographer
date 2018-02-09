@@ -18,20 +18,22 @@ import (
 
 const sypexDBURL = "http://sypexgeo.net/files/SxGeoCity_utf8.zip"
 
+// Sypex is a structure for Sypex geolocation provider resolving.
 type Sypex struct {
 	Provider
 
 	db sypex.SxGEO
 }
 
+// Update updates database.
 func (sx *Sypex) Update() (bool, error) {
 	rawFile, err := sx.downloadURL(sypexDBURL)
 	if err != nil {
 		return false, errors.Annotate(err, "Cannot update IP2Location DB")
 	}
 	defer func() {
-		rawFile.Close()
-		os.Remove(rawFile.Name())
+		rawFile.Close()           // nolint
+		os.Remove(rawFile.Name()) // nolint
 	}()
 
 	rfStat, err := rawFile.Stat()
@@ -56,17 +58,18 @@ func (sx *Sypex) Update() (bool, error) {
 
 		extension := filepath.Ext(zfile.Name)
 		if strings.ToLower(extension) == ".dat" {
-			if opened, err := zfile.Open(); err != nil {
+			opened, err := zfile.Open()
+			if err != nil {
 				return false, errors.Annotate(err, "Cannot extract file from archive")
-			} else {
-				return sx.saveFile(opened)
 			}
+			return sx.saveFile(opened)
 		}
 	}
 
 	return false, errors.Errorf("Cannot find required file")
 }
 
+// Reopen reopens Sypex database.
 func (sx *Sypex) Reopen(lastUpdated time.Time) (err error) {
 	return sx.reopenSafe(lastUpdated, func() (err error) {
 		defer func() {
@@ -85,6 +88,7 @@ func (sx *Sypex) Reopen(lastUpdated time.Time) (err error) {
 	})
 }
 
+// Resolve resolves a list of the given IPs
 func (sx *Sypex) Resolve(ips []net.IP) ResolveResult {
 	return sx.resolveSafe(func() map[string]GeoResult {
 		results := make(map[string]GeoResult)
@@ -97,25 +101,9 @@ func (sx *Sypex) Resolve(ips []net.IP) ResolveResult {
 					"error": err.Error(),
 				}).Debug("Cannot resolve ip.")
 			} else {
-				if countryData, ok := info["country"]; ok {
-					if countryMap, ok := countryData.(map[string]interface{}); ok {
-						if isoCode, ok := countryMap["iso"]; ok {
-							if isoCodeString, ok := isoCode.(string); ok {
-								result.Country = strings.ToLower(isoCodeString)
-							}
-						}
-					}
-				}
+				result.Country = sx.extractCountry(info)
 				if sx.precision == config.PrecisionCity {
-					if cityData, ok := info["city"]; ok {
-						if cityMap, ok := cityData.(map[string]interface{}); ok {
-							if cityName, ok := cityMap["name_en"]; ok {
-								if cityNameString, ok := cityName.(string); ok {
-									result.City = cityNameString
-								}
-							}
-						}
-					}
+					result.City = sx.extractCity(info)
 				}
 			}
 			results[ip.String()] = result
@@ -125,6 +113,35 @@ func (sx *Sypex) Resolve(ips []net.IP) ResolveResult {
 	})
 }
 
+func (sx *Sypex) extractCountry(info map[string]interface{}) string {
+	if countryData, ok := info["country"]; ok {
+		if countryMap, ok := countryData.(map[string]interface{}); ok {
+			if isoCode, ok := countryMap["iso"]; ok {
+				if isoCodeString, ok := isoCode.(string); ok {
+					return strings.ToLower(isoCodeString)
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+func (sx *Sypex) extractCity(info map[string]interface{}) string {
+	if cityData, ok := info["city"]; ok {
+		if cityMap, ok := cityData.(map[string]interface{}); ok {
+			if cityName, ok := cityMap["name_en"]; ok {
+				if cityNameString, ok := cityName.(string); ok {
+					return cityNameString
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// NewSypex returns new Sypex geolocation provider structure.
 func NewSypex(conf *config.Config) *Sypex {
 	return &Sypex{
 		Provider: Provider{
