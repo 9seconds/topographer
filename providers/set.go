@@ -12,11 +12,13 @@ import (
 
 const updateAttempts = 3
 
+// ProviderSet is a structure which combines providers and their weights.
 type ProviderSet struct {
 	Providers map[string]GeoProvider
 	Weights   map[string]float64
 }
 
+// Update downloads and applies new databases for all providers.
 func (ps *ProviderSet) Update(force bool) {
 	for k := range ps.Providers {
 		go ps.updateProvider(force, k, 0)
@@ -69,6 +71,8 @@ func (ps *ProviderSet) updateProvider(force bool, name string, attempt int) {
 	}
 }
 
+// Resolve resolves a list of ips with given list of provider subset to use.
+// IF list is empty, it means all providers will be used.
 func (ps *ProviderSet) Resolve(ips []net.IP, useProviders []string) []ResolveResult {
 	var wg sync.WaitGroup
 	results := make([]ResolveResult, 0, len(ps.Providers))
@@ -89,7 +93,7 @@ func (ps *ProviderSet) Resolve(ips []net.IP, useProviders []string) []ResolveRes
 	for k, v := range ps.Providers {
 		if _, ok := providerFilter[k]; ok {
 			wg.Add(1)
-			resultsCount += 1
+			resultsCount++
 
 			go func(provider GeoProvider) {
 				defer wg.Done()
@@ -109,6 +113,7 @@ func (ps *ProviderSet) Resolve(ips []net.IP, useProviders []string) []ResolveRes
 	return results
 }
 
+// NewProviderSet returns a new ProviderSet.
 func NewProviderSet(conf *config.Config) *ProviderSet {
 	set := ProviderSet{
 		Providers: make(map[string]GeoProvider),
