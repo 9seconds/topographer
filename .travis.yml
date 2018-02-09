@@ -1,0 +1,14 @@
+---
+
+language: go
+sudo: false
+dist: trusty
+go:
+  - 1.9.x
+  - master
+install:
+  - make alldeps
+script:
+  - make
+  - make lint
+  - make test
