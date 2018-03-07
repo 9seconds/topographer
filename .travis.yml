@@ -3,12 +3,12 @@
 language: go
 sudo: false
 dist: trusty
+
 go:
-  - 1.9.x
+  - "1.9.x"
+  - "1.10.x"
   - master
-install:
-  - make alldeps
+
 script:
-  - make
   - make lint
   - make test
