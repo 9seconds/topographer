@@ -12,3 +12,7 @@ go:
 script:
   - make lint
   - make test
+
+cache:
+  directories:
+    - vendor
