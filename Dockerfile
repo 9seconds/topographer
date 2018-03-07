@@ -22,14 +22,14 @@ ADD . /go/src/github.com/9seconds/topographer
 
 RUN set -x \
   && cd /go/src/github.com/9seconds/topographer \
-  && make deps \
-  && make
+  && make clean \
+  && make -j 4
 
 
 ###############################################################################
 # PACKAGE STAGE
 
-FROM alpine:3.7
+FROM alpine:latest
 LABEL maintainer="Sergey Arkhipov <nineseconds@yandex.ru>" version="0.0.1"
 
 ENTRYPOINT ["/topographer"]

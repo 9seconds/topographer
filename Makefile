@@ -3,41 +3,43 @@ IMAGE_NAME   := topographer
 APP_NAME     := topographer
 GOMETALINTER := gometalinter.v2
 
+# -----------------------------------------------------------------------------
 
-all: build_prod
-alldeps: deps devdeps
-deps: deps_dep
-devdeps: deps_gometalinter
+.PHONY: all docker clean lint test install_cli install_dep install_lint
+
+# -----------------------------------------------------------------------------
 
 
-build_dev:
-	@cd $(ROOT_DIR) && go build -o "$(APP_NAME)"
+all: $(APP_NAME)
 
-build_prod: dep_ensure
-	@cd $(ROOT_DIR) && go build -o "$(APP_NAME)" -ldflags="-s -w"
+$(APP_NAME): vendor
+	@go build -o "$(APP_NAME)" -ldflags="-s -w"
 
-deps_dep:
-	@go get -u github.com/golang/dep/cmd/dep
+vendor: Gopkg.lock Gopkg.toml install_cli
+	@dep ensure
 
-deps_gometalinter:
-	@go get -u gopkg.in/alecthomas/gometalinter.v2 \
-		&& $(GOMETALINTER) --install
+test: install_cli
+	@go test -v ./...
 
-lint:
-	@cd $(ROOT_DIR) && $(GOMETALINTER) ./...
-
-lint_dep: deps_gometalinter
-	@cd $(ROOT_DIR) && $(GOMETALINTER) ./...
-
-test:
-	@cd $(ROOT_DIR) && go test -v ./...
-
-dep_ensure:
-	@cd $(ROOT_DIR) && dep ensure
+lint: vendor install_cli
+	@$(GOMETALINTER) ./...
 
 clean:
-	@cd $(ROOT_DIR) && git clean -xfd && git reset --hard \
-		&& git submodule foreach --recursive sh -c 'git clean -xfd && git reset --hard'
+	@git clean -xfd && \
+		git reset --hard && \
+		git submodule foreach --recursive sh -c 'git clean -xfd && git reset --hard' && \
+		rm -rf ./vendor
 
 docker:
-	@docker build --pull -t $(IMAGE_NAME) $(ROOT_DIR)
+	@docker build --pull -t "$(IMAGE_NAME)" "$(ROOT_DIR)"
+
+install_cli: install_dep install_lint
+
+install_dep:
+	@which dep >/dev/null || go get -u github.com/golang/dep/cmd/dep
+
+install_lint:
+	@which "$(GOMETALINTER)" >/dev/null || ( \
+		go get -u gopkg.in/alecthomas/gometalinter.v2 && \
+		$(GOMETALINTER) --install \
+	)
