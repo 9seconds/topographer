@@ -36,10 +36,8 @@ docker:
 install_cli: install_dep install_lint
 
 install_dep:
-	@which dep >/dev/null || go get -u github.com/golang/dep/cmd/dep
+	@go get github.com/golang/dep/cmd/dep
 
 install_lint:
-	@which "$(GOMETALINTER)" >/dev/null || ( \
-		go get -u gopkg.in/alecthomas/gometalinter.v2 && \
-		$(GOMETALINTER) --install \
-	)
+	@go get gopkg.in/alecthomas/gometalinter.v2 && \
+		$(GOMETALINTER) --install

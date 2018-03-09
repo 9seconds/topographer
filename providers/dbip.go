@@ -116,24 +116,29 @@ func (di *DBIP) createDatabase() (*nradix.Tree, error) { // nolint: gocyclo
 		if err != nil {
 			return nil, errors.Annotate(err, "Error during parsing CSV")
 		}
+		country := strings.ToLower(record[dbipIdxCountry])
+		if country == "zz" {
+			continue
+		}
 
 		startIPStr := record[dbipIdxStartIP]
 		finishIPStr := record[dbipIdxFinishIP]
-		country := strings.ToLower(record[dbipIdxCountry])
 		city := ""
 		if di.precision == config.PrecisionCity {
 			city = record[dbipIdxCity]
 		}
 
 		startIP := net.ParseIP(startIPStr)
+		if startIP == nil || startIP.To4() == nil {
+			continue
+		}
 		finishIP := net.ParseIP(finishIPStr)
-		if country == "zz" || startIP == nil || startIP.To4() == nil || finishIP == nil || finishIP.To4() == nil {
+		if finishIP == nil || finishIP.To4() == nil {
 			continue
 		}
 
 		geoData := cache.get(country, city)
-		subnets, err := di.getSubnets(startIPStr, finishIPStr)
-		if err != nil {
+		if subnets, err := di.getSubnets(startIPStr, finishIPStr); err != nil {
 			log.WithFields(log.Fields{
 				"startIP":  startIPStr,
 				"finishIP": finishIPStr,
