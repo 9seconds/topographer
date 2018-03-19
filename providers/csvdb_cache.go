@@ -7,19 +7,19 @@ type cacheIface interface {
 	Get(key interface{}) (interface{}, bool)
 }
 
-type dbipCache struct {
+type csvdbCache struct {
 	size int
 	data map[string]cacheIface
 }
 
-func (dc *dbipCache) get(country, city string) *GeoResult {
+func (cc *csvdbCache) get(country, city string) *GeoResult {
 	var cache cacheIface
-	if got, ok := dc.data[country]; ok {
+	if got, ok := cc.data[country]; ok {
 		cache = got
 	} else {
-		newCache, _ := lru.New(dc.size)
+		newCache, _ := lru.New(cc.size)
 		cache = newCache
-		dc.data[country] = cache
+		cc.data[country] = cache
 	}
 
 	if item, ok := cache.Get(city); ok {
@@ -32,8 +32,8 @@ func (dc *dbipCache) get(country, city string) *GeoResult {
 	return item
 }
 
-func newDBIPCache(size int) dbipCache {
-	return dbipCache{
+func newCSVDBCache(size int) csvdbCache {
+	return csvdbCache{
 		size: size,
 		data: make(map[string]cacheIface),
 	}
