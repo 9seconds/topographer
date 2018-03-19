@@ -15,8 +15,6 @@ import (
 	"github.com/juju/errors"
 )
 
-const csvdbCacheSize = 256
-
 // CSVDBProvider presents a structure for provider with database in
 // CSV format.
 type CSVDBProvider struct {
@@ -54,7 +52,6 @@ func (cdp *CSVDBProvider) createDatabase() (*nradix.Tree, error) {
 
 	reader := csvdb.NewCSVReader(gzipFile, cdp.makeRecord)
 	tree := nradix.NewTree(0)
-	cache := newCSVDBCache(csvdbCacheSize)
 
 	for {
 		record, err := reader.Read()
@@ -68,7 +65,7 @@ func (cdp *CSVDBProvider) createDatabase() (*nradix.Tree, error) {
 			continue
 		}
 
-		geoData := cache.get(record.Country, record.City)
+		geoData := globalCSVDBCache.get(record.Country, record.City)
 		if subnets, err := record.GetSubnets(); err != nil {
 			log.WithFields(log.Fields{
 				"startIP":  record.StartIP,

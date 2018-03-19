@@ -1,6 +1,14 @@
 package providers
 
-import lru "github.com/hashicorp/golang-lru"
+import (
+	"sync"
+
+	lru "github.com/hashicorp/golang-lru"
+)
+
+const csvdbCacheSize = 2048
+
+var globalCSVDBCache csvdbCache
 
 type cacheIface interface {
 	Add(key, value interface{}) bool
@@ -8,19 +16,19 @@ type cacheIface interface {
 }
 
 type csvdbCache struct {
-	size int
-	data map[string]cacheIface
+	size  int
+	data  map[string]cacheIface
+	mutex *sync.Mutex
 }
 
 func (cc *csvdbCache) get(country, city string) *GeoResult {
-	var cache cacheIface
-	if got, ok := cc.data[country]; ok {
-		cache = got
-	} else {
-		newCache, _ := lru.New(cc.size)
-		cache = newCache
-		cc.data[country] = cache
+	cache := cc.getCache(country)
+	if item, ok := cache.Get(city); ok {
+		return item.(*GeoResult)
 	}
+
+	cc.mutex.Lock()
+	defer cc.mutex.Unlock()
 
 	if item, ok := cache.Get(city); ok {
 		return item.(*GeoResult)
@@ -32,9 +40,31 @@ func (cc *csvdbCache) get(country, city string) *GeoResult {
 	return item
 }
 
+func (cc *csvdbCache) getCache(country string) cacheIface {
+	if got, ok := cc.data[country]; ok {
+		return got
+	}
+
+	cc.mutex.Lock()
+	defer cc.mutex.Unlock()
+
+	if got, ok := cc.data[country]; ok {
+		return got
+	}
+	newCache, _ := lru.New(cc.size)
+	cc.data[country] = newCache
+
+	return newCache
+}
+
 func newCSVDBCache(size int) csvdbCache {
 	return csvdbCache{
-		size: size,
-		data: make(map[string]cacheIface),
+		size:  size,
+		data:  make(map[string]cacheIface),
+		mutex: &sync.Mutex{},
 	}
+}
+
+func init() {
+	globalCSVDBCache = newCSVDBCache(csvdbCacheSize)
 }
