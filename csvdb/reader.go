@@ -21,10 +21,10 @@ type CSVReader struct {
 func (cr *CSVReader) Read() (*Record, error) {
 	data, err := cr.next()
 	if err != nil {
-		if err == io.EOF {
-			return nil, io.EOF
+		if err != io.EOF {
+			err = errors.Annotate(err, "Cannot read new record")
 		}
-		return nil, errors.Annotate(err, "Cannot read new record")
+		return nil, err
 	}
 
 	record, err := cr.makeRecord(data)
