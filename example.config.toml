@@ -19,3 +19,7 @@ precision = "city"
   [databases.sypex]
   enabled = true
   weight = 0.9
+
+  [databases.software77]
+  enabled = true
+  weight = 0.9

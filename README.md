@@ -42,6 +42,7 @@ At the current moment, following databases are supported:
 * [DB-IP](https://db-ip.com) Country / City
 * [Sypex](https://sypexgeo.net) City
 * [IP2Location](https://www.ip2location.com) LITE DB1 and DB3
+* [Software77](http://software77.net/geo-ip/) GeoIP database
 
 So you basically need to build the container, propagate correct
 configuration file to it and set token for ip2location (could be

@@ -17,6 +17,7 @@ var ValidDatabases = map[string]bool{
 	"dbip":        true,
 	"ip2location": true,
 	"maxmind":     true,
+	"software77":  true,
 	"sypex":       true,
 }
 
