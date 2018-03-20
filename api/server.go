@@ -25,6 +25,7 @@ func MakeServer(set *providers.ProviderSet) *chi.Mux {
 	}
 
 	router.Use(middleware.StripSlashes)
+	router.Use(middleware.DefaultCompress)
 	router.Use(middleware.Timeout(60 * time.Second))
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.RealIP)
