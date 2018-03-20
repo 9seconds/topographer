@@ -17,7 +17,7 @@ type CSVReader struct {
 }
 
 func (cr *CSVReader) Read() (*Record, error) {
-	data, err := cr.reader.Read()
+	data, err := cr.next()
 	if err != nil {
 		if err == io.EOF {
 			return nil, io.EOF
@@ -37,9 +37,18 @@ func (cr *CSVReader) Read() (*Record, error) {
 	return record, nil
 }
 
+func (cr *CSVReader) next() (data []string, err error) {
+	for err == nil && len(data) == 0 {
+		data, err = cr.reader.Read()
+	}
+
+	return
+}
+
 func NewCSVReader(filefp io.Reader, makeRecord RecordMaker) *CSVReader {
 	reader := csv.NewReader(filefp)
 	reader.ReuseRecord = true
+	reader.Comment = '#'
 
 	return &CSVReader{reader, makeRecord}
 }

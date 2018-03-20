@@ -131,6 +131,8 @@ func NewProviderSet(conf *config.Config) *ProviderSet {
 				set.Providers["sypex"] = NewSypex(conf)
 			case "ip2location":
 				set.Providers["ip2location"] = NewIP2Location(conf)
+			case "software77":
+				set.Providers["software77"] = NewSoftware77(conf)
 			}
 			set.Weights[k] = v.Weight
 		}

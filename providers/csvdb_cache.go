@@ -6,7 +6,7 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
-const csvdbCacheSize = 2048
+const csvdbCacheSize = 3092
 
 var globalCSVDBCache csvdbCache
 
