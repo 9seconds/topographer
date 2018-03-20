@@ -9,8 +9,10 @@ import (
 	"github.com/juju/errors"
 )
 
+// RecordMaker is a type which converts parsed CSV record to the Record instance.
 type RecordMaker func([]string) (*Record, error)
 
+// CSVReader is a wrapper over csv.Reader to convert each row into Record instance.
 type CSVReader struct {
 	reader     *csv.Reader
 	makeRecord RecordMaker
@@ -45,6 +47,7 @@ func (cr *CSVReader) next() (data []string, err error) {
 	return
 }
 
+// NewCSVReader converts given io.Reader instance into CSVReader.
 func NewCSVReader(filefp io.Reader, makeRecord RecordMaker) *CSVReader {
 	reader := csv.NewReader(filefp)
 	reader.ReuseRecord = true

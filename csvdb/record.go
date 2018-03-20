@@ -9,6 +9,7 @@ import (
 	"github.com/juju/errors"
 )
 
+// Record presents an extracted data from CSV record.
 type Record struct {
 	Country  string
 	City     string
@@ -16,6 +17,7 @@ type Record struct {
 	FinishIP string
 }
 
+// GetSubnets returns non-overlapping subnets of the given Record.
 func (r *Record) GetSubnets() (subnets []string, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
@@ -32,6 +34,7 @@ func (r *Record) GetSubnets() (subnets []string, err error) {
 	return
 }
 
+// NewRecord creates new CSV record.
 func NewRecord(country, city, startIP, finishIP string) (*Record, error) {
 	country = strings.ToLower(country)
 	if country == "zz" {

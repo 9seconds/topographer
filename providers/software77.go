@@ -40,6 +40,7 @@ func (s77 *Software77) Update() (bool, error) {
 	return s77.saveFile(rawFile)
 }
 
+// NewSoftware77 creates new instance of Software77 provider.
 func NewSoftware77(conf *config.Config) *Software77 {
 	return &Software77{
 		CSVDBProvider: CSVDBProvider{
