@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOK(t *testing.T) {
+func TestRecordOK(t *testing.T) {
 	record, err := NewRecord("RU", "Nizhniy Novgorod", "93.94.95.1", "93.94.95.255")
 	assert.Nil(t, err)
 	assert.Equal(t, record.Country, "ru")
@@ -19,14 +19,14 @@ func TestOK(t *testing.T) {
 	assert.Len(t, subnets, 8)
 }
 
-func TestUnknownCountry(t *testing.T) {
+func TestRecordUnknownCountry(t *testing.T) {
 	for _, country := range []string{"zz", "zZ", "Zz", "ZZ"} {
 		_, err := NewRecord(country, "Nizhniy Novgorod", "93.94.95.1", "93.94.95.255")
 		assert.NotNil(t, err)
 	}
 }
 
-func TestIncorrectIP(t *testing.T) {
+func TestRecordIncorrectIP(t *testing.T) {
 	_, err := NewRecord("ru", "Moscow", "x", "93.94.95.255")
 	assert.NotNil(t, err)
 
