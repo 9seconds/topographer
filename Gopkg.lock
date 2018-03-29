@@ -16,8 +16,8 @@
 [[projects]]
   name = "github.com/PuerkitoBio/goquery"
   packages = ["."]
-  revision = "09540e565986583836b5fc792fe951ec5fd201dd"
-  version = "v1.3.0"
+  revision = "a86ea073017a6beddef78c8659e7224e8ca634b0"
+  version = "v1.4.0"
 
 [[projects]]
   branch = "master"
@@ -122,7 +122,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "c3a3ad6d03f7a915c0f7e194b7152974bb73d287"
+  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
 
 [[projects]]
   branch = "master"
@@ -140,7 +140,7 @@
     "unix",
     "windows"
   ]
-  revision = "d8e400bc7db4870d786864138af681469693d18c"
+  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
@@ -151,8 +151,8 @@
 [[projects]]
   name = "gopkg.in/night-codes/go-sypexgeo.v1"
   packages = ["."]
-  revision = "9987692b262bc78e5baab47a77e3430028bbb68b"
-  version = "v1.2"
+  revision = "20d9f8263e8ab652868711cd0f9401566d849a3a"
+  version = "v1.3"
 
 [solve-meta]
   analyzer-name = "dep"
