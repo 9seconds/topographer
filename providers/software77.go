@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/juju/errors"
 	"github.com/9seconds/topographer/config"
 	"github.com/9seconds/topographer/csvdb"
-	"github.com/juju/errors"
 )
 
 const (
@@ -38,6 +38,11 @@ func (s77 *Software77) Update() (bool, error) {
 	}()
 
 	return s77.saveFile(rawFile)
+}
+
+// Reopen reopens Software77 database.
+func (s77 *Software77) Reopen(lastUpdated time.Time) (err error) {
+	return s77.CSVDBProvider.Reopen(lastUpdated)
 }
 
 // NewSoftware77 creates new instance of Software77 provider.

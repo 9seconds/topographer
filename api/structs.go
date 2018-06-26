@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net"
 
-	"github.com/9seconds/topographer/providers"
 	"github.com/juju/errors"
+	"github.com/9seconds/topographer/providers"
 	"github.com/xrash/smetrics"
 )
 

@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/go-chi/chi"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/9seconds/topographer/providers"
@@ -17,9 +18,18 @@ func selfResolveIP(w http.ResponseWriter, r *http.Request) {
 	response := ipResolveResponseStruct{
 		Results: make(map[string]*ipResolveItemStruct),
 	}
-	addr := net.ParseIP(r.RemoteAddr)
-	if addr.To4() != nil {
-		results := set.Resolve([]net.IP{net.ParseIP(r.RemoteAddr)}, []string{})
+
+	var ipToResolve net.IP
+	givenIP := chi.URLParam(r, "ip")
+
+	if givenIP == "" {
+		ipToResolve = net.ParseIP(r.RemoteAddr)
+	} else {
+		ipToResolve = net.ParseIP(givenIP)
+	}
+
+	if ipToResolve.To4() != nil {
+		results := set.Resolve([]net.IP{ipToResolve}, []string{})
 		response.Build(results)
 	}
 
