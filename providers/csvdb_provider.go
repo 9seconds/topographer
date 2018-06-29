@@ -10,9 +10,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/9seconds/topographer/csvdb"
 	"github.com/asergeyev/nradix"
 	"github.com/juju/errors"
-	"github.com/9seconds/topographer/csvdb"
 )
 
 // CSVDBProvider presents a structure for provider with database in
@@ -74,22 +74,29 @@ func (cdp *CSVDBProvider) createDatabase() (*nradix.Tree, error) {
 			}).Warn("Cannot parse ip range")
 		} else {
 			for _, cidr := range subnets {
-				if errAdd := tree.AddCIDR(cidr, geoData); errAdd != nil {
-					if errAdd == nradix.ErrNodeBusy {
-						log.Infof("CIDR %s for country %s already exists. Try to set the new value", cidr, geoData.Country)
-						if errSet := tree.SetCIDR(cidr, geoData); errSet != nil {
-							return nil, errors.Annotate(errSet, "Incorrect IP range")
-						}
-						continue
-					} else {
-						return nil, errors.Annotate(errAdd, "Incorrect IP range")
-					}
+				if errAddOrSet := AddOrSetCIDR(tree, cidr, geoData); errAddOrSet != nil {
+					return nil, errAddOrSet
 				}
 			}
 		}
 	}
 
 	return tree, nil
+}
+
+func AddOrSetCIDR(tree *nradix.Tree, cidr string, geoData *GeoResult) error {
+	if errAdd := tree.AddCIDR(cidr, geoData); errAdd != nil {
+		if errAdd == nradix.ErrNodeBusy {
+			log.Infof("CIDR %s for country %s already exists. Try to set the new value", cidr, geoData.Country)
+			if errSet := tree.SetCIDR(cidr, geoData); errSet != nil {
+				return errors.Annotate(errSet, "Incorrect IP range")
+			}
+			return nil
+		} else {
+			return errors.Annotate(errAdd, "Incorrect IP range")
+		}
+	}
+	return nil
 }
 
 // Resolve resolves a list of the given IPs
