@@ -52,7 +52,7 @@ func (di *DBIP) Update() (bool, error) {
 	return di.saveFile(rawFile)
 }
 
-func LoadSourcesFromUrl(url string) (*goquery.Document, error) {
+func loadSourcesFromURL(url string) (*goquery.Document, error) {
 	// Load the URL
 	res, e := http.Get(url)
 	if e != nil {
@@ -62,7 +62,7 @@ func LoadSourcesFromUrl(url string) (*goquery.Document, error) {
 }
 
 func (di *DBIP) updateGetDownloadLink(url string) (string, error) {
-	doc, err := LoadSourcesFromUrl(url)
+	doc, err := loadSourcesFromURL(url)
 	if err != nil {
 		return "", errors.Annotate(err, "Cannot fetch DBIP HTML page")
 	}
