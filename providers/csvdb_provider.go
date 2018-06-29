@@ -92,9 +92,8 @@ func addOrSetCIDR(tree *nradix.Tree, cidr string, geoData *GeoResult) error {
 				return errors.Annotate(errSet, "Incorrect IP range")
 			}
 			return nil
-		} else {
-			return errors.Annotate(errAdd, "Incorrect IP range")
 		}
+		return errors.Annotate(errAdd, "Incorrect IP range")
 	}
 	return nil
 }
