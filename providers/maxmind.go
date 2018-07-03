@@ -13,8 +13,8 @@ import (
 	maxminddb "github.com/oschwald/geoip2-golang"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/9seconds/topographer/config"
 	"github.com/juju/errors"
+	"github.com/9seconds/topographer/config"
 )
 
 const (

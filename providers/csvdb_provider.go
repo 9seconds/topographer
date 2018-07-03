@@ -74,14 +74,28 @@ func (cdp *CSVDBProvider) createDatabase() (*nradix.Tree, error) {
 			}).Warn("Cannot parse ip range")
 		} else {
 			for _, cidr := range subnets {
-				if err := tree.AddCIDR(cidr, geoData); err != nil {
-					return nil, errors.Annotate(err, "Incorrect IP range")
+				if errAddOrSet := addOrSetCIDR(tree, cidr, geoData); errAddOrSet != nil {
+					return nil, errAddOrSet
 				}
 			}
 		}
 	}
 
 	return tree, nil
+}
+
+func addOrSetCIDR(tree *nradix.Tree, cidr string, geoData *GeoResult) error {
+	if errAdd := tree.AddCIDR(cidr, geoData); errAdd != nil {
+		if errAdd == nradix.ErrNodeBusy {
+			log.Infof("CIDR %s for country %s already exists. Try to set the new value", cidr, geoData.Country)
+			if errSet := tree.SetCIDR(cidr, geoData); errSet != nil {
+				return errors.Annotate(errSet, "Incorrect IP range")
+			}
+			return nil
+		}
+		return errors.Annotate(errAdd, "Incorrect IP range")
+	}
+	return nil
 }
 
 // Resolve resolves a list of the given IPs

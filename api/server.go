@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/9seconds/topographer/providers"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/9seconds/topographer/providers"
 )
 
 type contextKey string
@@ -32,9 +32,12 @@ func MakeServer(set *providers.ProviderSet) *chi.Mux {
 	router.Use(middleware.SetHeader("Content-Type", "application/json"))
 	router.Use(ctxProviderSet)
 
-	router.Get("/", selfResolveIP)
-	router.Post("/", resolveIPs)
 	router.Get("/info", providerInfo)
+	router.Route("/", func(r chi.Router) {
+		r.Get("/{ip}", selfResolveIP)
+		r.Get("/", selfResolveIP)
+		r.Post("/", resolveIPs)
+	})
 
 	return router
 }

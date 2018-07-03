@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"net/http"
+
 	"github.com/9seconds/topographer/config"
 	"github.com/9seconds/topographer/csvdb"
 	"github.com/PuerkitoBio/goquery"
@@ -50,8 +52,17 @@ func (di *DBIP) Update() (bool, error) {
 	return di.saveFile(rawFile)
 }
 
+func loadSourcesFromURL(url string) (*goquery.Document, error) {
+	// Load the URL
+	res, e := http.Get(url)
+	if e != nil {
+		return nil, e
+	}
+	return goquery.NewDocumentFromReader(res.Body)
+}
+
 func (di *DBIP) updateGetDownloadLink(url string) (string, error) {
-	doc, err := goquery.NewDocument(url)
+	doc, err := loadSourcesFromURL(url)
 	if err != nil {
 		return "", errors.Annotate(err, "Cannot fetch DBIP HTML page")
 	}
