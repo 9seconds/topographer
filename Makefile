@@ -1,11 +1,15 @@
 ROOT_DIR     := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 IMAGE_NAME   := topographer
 APP_NAME     := topographer
-GOMETALINTER := gometalinter.v2
+
+GOLANGCI_LINT_VERSION := v1.12.3
+
+MOD_ON  := env GO111MODULE=on
+MOD_OFF := env GO111MODULE=auto
 
 # -----------------------------------------------------------------------------
 
-.PHONY: all docker clean lint test install_cli install_dep install_lint
+.PHONY: all docker clean lint test prepare install-lint
 
 # -----------------------------------------------------------------------------
 
@@ -13,31 +17,24 @@ GOMETALINTER := gometalinter.v2
 all: $(APP_NAME)
 
 $(APP_NAME): vendor
-	@go build -o "$(APP_NAME)" -ldflags="-s -w"
+	@$(MOD_ON) go build -o "$(APP_NAME)" -ldflags="-s -w"
 
-vendor: Gopkg.lock Gopkg.toml install_cli
-	@dep ensure
+test:
+	@$(MOD_ON) go test -v ./...
 
-test: install_cli
-	@go test -v ./...
-
-lint: vendor install_cli
-	@$(GOMETALINTER) --deadline=2m ./...
+lint:
+	@$(MOD_ON) golangci-lint run
 
 clean:
 	@git clean -xfd && \
 		git reset --hard && \
-		git submodule foreach --recursive sh -c 'git clean -xfd && git reset --hard' && \
-		rm -rf ./vendor
+		git submodule foreach --recursive sh -c 'git clean -xfd && git reset --hard'
 
 docker:
 	@docker build --pull -t "$(IMAGE_NAME)" "$(ROOT_DIR)"
 
-install_cli: install_dep install_lint
+prepare: install-lint
 
-install_dep:
-	@go get github.com/golang/dep/cmd/dep
-
-install_lint:
-	@go get gopkg.in/alecthomas/gometalinter.v2 && \
-		$(GOMETALINTER) --install
+install-lint:
+	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh \
+		| $(MOD_OFF) bash -s -- -b $(GOPATH)/bin $(GOLANGCI_LINT_VERSION)
