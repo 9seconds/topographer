@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	dbipDBURLCity    = "https://db-ip.com/db/download/city"
-	dbipDBURLCountry = "https://db-ip.com/db/download/country"
+	dbipDBURLCity    = "https://db-ip.com/db/download/ip-to-city-lite"
+	dbipDBURLCountry = "https://db-ip.com/db/download/ip-to-country-lite"
 
 	dbipIdxStartIP  = 0
 	dbipIdxFinishIP = 1
@@ -67,7 +67,7 @@ func (di *DBIP) updateGetDownloadLink(url string) (string, error) {
 		return "", errors.Annotate(err, "Cannot fetch DBIP HTML page")
 	}
 
-	url, ok := doc.Find("#free_download_link").First().Attr("href")
+	url, ok := doc.Find(".free_download_link").First().Attr("href")
 	if !ok {
 		return "", errors.Errorf("Cannot extract download URL")
 	}
