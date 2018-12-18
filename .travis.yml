@@ -10,9 +10,6 @@ go:
   - master
 
 script:
+  - make prepare
   - make lint
   - make test
-
-cache:
-  directories:
-    - vendor
