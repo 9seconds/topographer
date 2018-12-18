@@ -6,9 +6,8 @@ dist: trusty
 
 go:
   - "1.11.x"
-  - master
 
 script:
   - make prepare
-  - make lint
+  # - make lint
   - make test
