@@ -16,7 +16,7 @@ MOD_OFF := env GO111MODULE=auto
 
 all: $(APP_NAME)
 
-$(APP_NAME): vendor
+$(APP_NAME):
 	@$(MOD_ON) go build -o "$(APP_NAME)" -ldflags="-s -w"
 
 test:
