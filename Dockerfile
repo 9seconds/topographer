@@ -13,7 +13,8 @@
 ###############################################################################
 # BUILD STAGE
 
-FROM golang:alpine AS build-env
+FROM golang:1.11-alpine AS build-env
+ENV CGO_ENABLED=0
 
 RUN set -x \
   && apk --update add git make
