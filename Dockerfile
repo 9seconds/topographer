@@ -24,6 +24,7 @@ ADD . /go/src/github.com/9seconds/topographer
 RUN set -x \
   && cd /go/src/github.com/9seconds/topographer \
   && make clean \
+  && git submodule update --init \
   && make -j 4
 
 
