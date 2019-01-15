@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	software77URL = "http://software77.net/geo-i/?DL=1"
+	software77URL = "http://software77.net/geo-ip/?DL=1"
 
 	software77IdxStartIP  = 0
 	software77IdxFinishIP = 1
