@@ -8,13 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/juju/errors"
 	"github.com/9seconds/topographer/config"
 	"github.com/9seconds/topographer/csvdb"
+	"github.com/juju/errors"
 )
 
 const (
-	software77URL = "http://software77.net/geo-ip/?DL=1"
+	software77URL = "http://software77.net/geo-i/?DL=1"
 
 	software77IdxStartIP  = 0
 	software77IdxFinishIP = 1
@@ -30,6 +30,9 @@ type Software77 struct {
 func (s77 *Software77) Update() (bool, error) {
 	rawFile, err := s77.downloadURL(software77URL)
 	if err != nil {
+		return false, errors.Annotate(err, "Cannot download software77")
+	}
+	if rawFile == nil {
 		return false, errors.Annotate(err, "Cannot download software77")
 	}
 	defer func() {

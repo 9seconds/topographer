@@ -44,6 +44,9 @@ func (di *DBIP) Update() (bool, error) {
 	if err != nil {
 		return false, errors.Annotate(err, "Cannot download DBIP")
 	}
+	if rawFile == nil {
+		return false, errors.Annotate(err, "Cannot download DBIP")
+	}
 	defer func() {
 		rawFile.Close()           // nolint
 		os.Remove(rawFile.Name()) // nolint

@@ -29,7 +29,10 @@ type Sypex struct {
 func (sx *Sypex) Update() (bool, error) {
 	rawFile, err := sx.downloadURL(sypexDBURL)
 	if err != nil {
-		return false, errors.Annotate(err, "Cannot update IP2Location DB")
+		return false, errors.Annotate(err, "Cannot update Sypex DB")
+	}
+	if rawFile == nil {
+		return false, errors.Annotate(err, "Cannot update Sypex DB")
 	}
 	defer func() {
 		rawFile.Close()           // nolint
