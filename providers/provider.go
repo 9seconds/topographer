@@ -15,8 +15,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/juju/errors"
 	"github.com/9seconds/topographer/config"
+	"github.com/juju/errors"
 )
 
 // Provider is a structure which represents a basic common data for every

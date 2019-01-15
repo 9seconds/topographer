@@ -52,6 +52,9 @@ func (i2l *IP2Location) Update() (bool, error) {
 	if err != nil {
 		return false, errors.Annotatef(err, "Cannot update IP2Location DB")
 	}
+	if rawFile == nil {
+		return false, errors.Annotate(err, "Cannot update IP2Location DB")
+	}
 	defer func() {
 		rawFile.Close()           // nolint
 		os.Remove(rawFile.Name()) // nolint
