@@ -16,3 +16,4 @@ vendor/
 
 tags
 topographer
+.bin/
