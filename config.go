@@ -66,7 +66,6 @@ func parseConfig(path string) (*config, error) {
 	}
 
 	directory, err := os.OpenFile(conf.RootDirectory, os.O_RDWR|os.O_CREATE, 0777)
-    defer directory.Close()
 
 	switch {
 	case os.IsNotExist(err):
@@ -74,6 +73,8 @@ func parseConfig(path string) (*config, error) {
 	case os.IsPermission(err):
 		return nil, fmt.Errorf("cannot open a directory with correct permissions: %w", err)
 	}
+
+	directory.Close()
 
 	return &conf, nil
 }
