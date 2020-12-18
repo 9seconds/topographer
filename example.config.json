@@ -1,0 +1,10 @@
+{
+    "listen": ":8000",
+    "root_directory": "/tmp",
+    "providers": [
+        {
+            "name": "maxmind",
+            "update_every": "1s"
+        }
+    ]
+}
