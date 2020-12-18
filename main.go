@@ -89,9 +89,7 @@ func mainFunc() error {
 
 	defer listener.Close()
 
-	if err := srv.Serve(listener); err != nil {
-		return fmt.Errorf("stopped to manage requests: %w", err)
-	}
+	srv.Serve(listener) // nolint: errcheck
 
 	<-closeChan
 

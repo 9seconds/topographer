@@ -45,7 +45,6 @@ type config struct {
 
 type configProvider struct {
 	Name        string   `json:"name"`
-	Directory   string   `json:"directory"`
 	UpdateEvery duration `json:"update_every"`
 }
 
@@ -75,6 +74,22 @@ func parseConfig(path string) (*config, error) {
 	}
 
 	directory.Close()
+
+	seenNames := make(map[string]bool)
+
+	for i := range conf.Providers {
+		prov := conf.Providers[i]
+
+		if _, ok := seenNames[prov.Name]; ok {
+			return nil, fmt.Errorf("Name %s is duplicated", prov.Name)
+		}
+
+		seenNames[prov.Name] = true
+
+		if prov.UpdateEvery.Duration == 0 {
+			prov.UpdateEvery.Duration = DefaultUpdateEvery
+		}
+	}
 
 	return &conf, nil
 }
