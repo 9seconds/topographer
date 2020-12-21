@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/9seconds/topographer/topographer"
 	"github.com/leaanthony/clir"
 )
 
@@ -65,14 +64,14 @@ func mainFunc() error {
 	srv := &http.Server{
 		ReadTimeout:  DefaultReadTimeout,
 		WriteTimeout: DefaultWriteTimeout,
-		Handler: topographer.Handler(topographer.Opts{
-			Context: rootCtx,
-			Providers: []topographer.Provider{
-				topographer.TestProvider{},
-				topographer.TestProvider{},
-				topographer.TestProvider{},
-			},
-		}),
+		// Handler: topolib.Handler(topolib.Opts{
+		// 	Context: rootCtx,
+		// 	Providers: []topographer.Provider{
+		// 		topographer.TestProvider{},
+		// 		topographer.TestProvider{},
+		// 		topographer.TestProvider{},
+		// 	},
+		// }),
 	}
 	closeChan := make(chan struct{})
 
