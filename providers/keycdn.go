@@ -50,7 +50,7 @@ func (k keycdnProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provider
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
+        io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 		resp.Body.Close()
 	}()
 

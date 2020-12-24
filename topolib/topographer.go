@@ -60,13 +60,13 @@ func (t *Topographer) ResolveAll(ctx context.Context,
 	}()
 
 	for _, v := range ips {
-		t.workerPool.Invoke(&resolveIPRequest{
+        t.workerPool.Invoke(&resolveIPRequest{ // nolint: errcheck
 			ctx:           ctx,
 			ip:            v,
 			providers:     providersToUse,
 			resultChannel: resultChannel,
 			wg:            wg,
-		})
+        })
 	}
 
 	for res := range resultChannel {
@@ -96,7 +96,7 @@ func (t *Topographer) Resolve(ctx context.Context,
 
 	wg.Add(1)
 
-	t.workerPool.Invoke(&resolveIPRequest{
+    t.workerPool.Invoke(&resolveIPRequest{ // nolint: errcheck
 		ctx:           ctx,
 		ip:            ip,
 		providers:     providersToUse,

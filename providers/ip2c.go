@@ -46,7 +46,7 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
+        io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 		resp.Body.Close()
 	}()
 
