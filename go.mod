@@ -11,7 +11,6 @@ require (
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/afero v1.5.1
 	github.com/stretchr/testify v1.6.1 // indirect
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
