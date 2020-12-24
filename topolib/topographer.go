@@ -11,6 +11,7 @@ import (
 	"github.com/antzucaro/matchr"
 	"github.com/panjf2000/ants/v2"
 	"github.com/pariz/gountries"
+	"golang.org/x/sync/errgroup"
 )
 
 const DefaultWorkerPoolSize = 4096
@@ -43,30 +44,38 @@ func (t *Topographer) ResolveAll(ctx context.Context,
 		return nil, ErrTopographerShutdown
 	}
 
-	resultChannel := make(chan ResolveResult, len(ips))
-	rv := make([]ResolveResult, 0, len(ips))
-	wg := &sync.WaitGroup{}
-
 	providersToUse, err := t.getProvidersToUse(providers)
 	if err != nil {
 		return nil, err
 	}
 
-	wg.Add(len(ips))
+	errGroup, ctx := errgroup.WithContext(ctx)
+	resultChannel := make(chan ResolveResult, len(ips))
+	rv := make([]ResolveResult, 0, len(ips))
+	taskWg := &sync.WaitGroup{}
+
+	for _, v := range ips {
+		errGroup.Go(func() error {
+			taskWg.Add(1)
+
+			return t.workerPool.Invoke(&resolveIPRequest{
+				ctx:           ctx,
+				ip:            v,
+				providers:     providersToUse,
+				resultChannel: resultChannel,
+				wg:            taskWg,
+			})
+		})
+	}
 
 	go func() {
-		wg.Wait()
+        errGroup.Wait() // nolint: errcheck
+		taskWg.Wait()
 		close(resultChannel)
 	}()
 
-	for _, v := range ips {
-        t.workerPool.Invoke(&resolveIPRequest{ // nolint: errcheck
-			ctx:           ctx,
-			ip:            v,
-			providers:     providersToUse,
-			resultChannel: resultChannel,
-			wg:            wg,
-        })
+	if err := errGroup.Wait(); err != nil {
+		return nil, fmt.Errorf("cannot start all tasks: %w", err)
 	}
 
 	for res := range resultChannel {
@@ -88,6 +97,7 @@ func (t *Topographer) Resolve(ctx context.Context,
 
 	resultChannel := make(chan ResolveResult)
 	wg := &sync.WaitGroup{}
+    rv := ResolveResult{}
 
 	providersToUse, err := t.getProvidersToUse(providers)
 	if err != nil {
@@ -96,15 +106,18 @@ func (t *Topographer) Resolve(ctx context.Context,
 
 	wg.Add(1)
 
-    t.workerPool.Invoke(&resolveIPRequest{ // nolint: errcheck
+	err = t.workerPool.Invoke(&resolveIPRequest{ // nolint: errcheck
 		ctx:           ctx,
 		ip:            ip,
 		providers:     providersToUse,
 		resultChannel: resultChannel,
 		wg:            wg,
 	})
+	if err != nil {
+		return rv, fmt.Errorf("cannot start task: %w", err)
+	}
 
-	rv := <-resultChannel
+	rv = <-resultChannel
 
 	close(resultChannel)
 
