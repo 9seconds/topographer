@@ -50,7 +50,7 @@ func (k keycdnProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provider
 	}
 
 	defer func() {
-        io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
+		io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 		resp.Body.Close()
 	}()
 
@@ -63,10 +63,6 @@ func (k keycdnProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provider
 
 	if err := jsonDecoder.Decode(&jsonResponse); err != nil {
 		return result, fmt.Errorf("cannot parse a response: %w", err)
-	}
-
-	if jsonResponse.Status != "success" {
-		return result, fmt.Errorf("failed to geolocate: %s", jsonResponse.Status)
 	}
 
 	result.City = jsonResponse.Data.Geo.City

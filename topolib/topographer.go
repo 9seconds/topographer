@@ -217,6 +217,7 @@ func (t *Topographer) resolveIPMerge(ip net.IP, results []ResolveResultDetail) R
 		if len(group) > maxLen {
 			cityResults = group
 			selectedCountry = country
+			maxLen = len(group)
 		}
 	}
 

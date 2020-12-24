@@ -8,6 +8,7 @@ require (
 	github.com/mercari/go-circuitbreaker v0.0.0-20201130021310-aff740600e91
 	github.com/panjf2000/ants/v2 v2.4.3
 	github.com/pariz/gountries v0.0.0-20200430155801-1c6a393df9c7
+	github.com/qri-io/jsonschema v0.2.0
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/afero v1.5.1
 	github.com/stretchr/testify v1.6.1 // indirect

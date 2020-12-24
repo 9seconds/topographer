@@ -21,9 +21,8 @@ type httpClient struct {
 
 func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 	if h.client.Timeout > 0 {
-		ctx, cancel := context.WithTimeout(req.Context(), h.client.Timeout)
+        ctx, _ := context.WithTimeout(req.Context(), h.client.Timeout) // nolint: govet
 		req = req.WithContext(ctx)
-		defer cancel()
 	}
 
     ctx := req.Context()
@@ -55,6 +54,10 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 
 		return resp, err
 	})
+
+    if resp == nil {
+        return nil, err
+    }
 
 	return resp.(*http.Response), err
 }
