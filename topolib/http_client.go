@@ -20,15 +20,13 @@ type httpClient struct {
 }
 
 func (h httpClient) Do(req *http.Request) (*http.Response, error) {
-	var ctx context.Context
-	var cancel context.CancelFunc
-
 	if h.client.Timeout > 0 {
-		ctx, cancel = context.WithTimeout(req.Context(), h.client.Timeout)
+		ctx, cancel := context.WithTimeout(req.Context(), h.client.Timeout)
+		req = req.WithContext(ctx)
 		defer cancel()
-	} else {
-		ctx = req.Context()
 	}
+
+    ctx := req.Context()
 
 	if err := h.rateLimiter.Wait(ctx); err != nil {
 		return nil, fmt.Errorf("cannot execute a request due to rate limiter: %w", err)
@@ -41,7 +39,7 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 
 		if err != nil {
 			if resp != nil {
-                io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
+				io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 				resp.Body.Close()
 			}
 
@@ -49,7 +47,7 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 		}
 
 		if resp.StatusCode >= http.StatusBadRequest {
-            io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
+			io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 			resp.Body.Close()
 
 			return nil, fmt.Errorf("Netloc has responded with %s", resp.Status)
