@@ -7,10 +7,9 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
+	"github.com/9seconds/topographer/topolib"
 	"github.com/leaanthony/clir"
 )
 
@@ -34,7 +33,8 @@ func main() {
 	cli.Action(mainFunc)
 
 	if err := cli.Run(); err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 
@@ -48,30 +48,23 @@ func mainFunc() error {
 		return fmt.Errorf("cannot read config: %w", err)
 	}
 
-	rootCtx, cancel := context.WithCancel(context.Background())
+	rootCtx, cancel := makeRootContext()
 	defer cancel()
 
-	sigChan := make(chan os.Signal, 1)
+	if err := os.MkdirAll(conf.GetRootDirectory(), 0777); err != nil {
+		return fmt.Errorf("cannot create root directory %s: %w", conf.GetRootDirectory(), err)
+	}
 
-	go func() {
-		for range sigChan {
-			cancel()
-		}
-	}()
+	providers, err := makeProviders(conf)
+	if err != nil {
+		return fmt.Errorf("cannot initialise a list of providers: %w", err)
+	}
 
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
+	topo := topolib.NewTopographer(providers, newLogger(), conf.GetWorkerPoolSize())
 	srv := &http.Server{
 		ReadTimeout:  DefaultReadTimeout,
 		WriteTimeout: DefaultWriteTimeout,
-		// Handler: topolib.Handler(topolib.Opts{
-		// 	Context: rootCtx,
-		// 	Providers: []topographer.Provider{
-		// 		topographer.TestProvider{},
-		// 		topographer.TestProvider{},
-		// 		topographer.TestProvider{},
-		// 	},
-		// }),
+		Handler:      topolib.NewHTTPHandler(topo),
 	}
 	closeChan := make(chan struct{})
 

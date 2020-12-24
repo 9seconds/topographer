@@ -3,7 +3,7 @@
     "root_directory": "/tmp",
     "providers": [
         {
-            "name": "maxmind",
+            "name": "ip2c",
             "update_every": "1s"
         }
     ]

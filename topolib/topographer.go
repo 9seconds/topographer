@@ -189,7 +189,7 @@ func (t *Topographer) resolveIPLookup(ctx context.Context,
 		ProviderName: provider.Name(),
 	}
 
-	if res, err := provider.Lookup(ip); err != nil {
+	if res, err := provider.Lookup(ctx, ip); err != nil {
 		t.logger.LookupError(provider.Name(), err)
 	} else {
 		detail.City = res.City
@@ -294,7 +294,7 @@ func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) *To
 	}
 
 	poolSize := workerPoolSize
-	if poolSize == 0 {
+	if poolSize <= 0 {
 		poolSize = DefaultWorkerPoolSize
 	}
 

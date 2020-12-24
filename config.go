@@ -6,10 +6,16 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 )
 
-const DefaultUpdateEvery = 24 * time.Hour
+const (
+	DefaultHTTPTimeout       = 10 * time.Second
+	DefaultUpdateEvery       = 24 * time.Hour
+	DefaultRateLimitInterval = 100 * time.Millisecond
+	DefaultRateLimitBurst    = 10
+)
 
 type duration struct {
 	time.Duration
@@ -38,14 +44,83 @@ func (d *duration) UnmarshalJSON(b []byte) error {
 }
 
 type config struct {
-	Listen        string           `json:"listen"`
-	RootDirectory string           `json:"root_directory"`
-	Providers     []configProvider `json:"providers"`
+	Listen         string           `json:"listen"`
+	RootDirectory  string           `json:"root_directory"`
+	WorkerPoolSize uint             `json:"worker_pool_size"`
+	Providers      []configProvider `json:"providers"`
+}
+
+func (c config) GetListen() string {
+	return c.Listen
+}
+
+func (c config) GetRootDirectory() string {
+	if c.RootDirectory != "" {
+		return c.RootDirectory
+	}
+
+	return filepath.Join(os.TempDir(), "topographer")
+}
+
+func (c config) GetWorkerPoolSize() int {
+    return int(c.WorkerPoolSize)
+}
+
+func (c config) GetProviders() []configProvider {
+	return c.Providers
 }
 
 type configProvider struct {
-	Name        string   `json:"name"`
-	UpdateEvery duration `json:"update_every"`
+	Name              string   `json:"name"`
+	Directory         string   `json:"directory"`
+	RateLimitInterval duration `json:"rate_limit_interval"`
+	RateLimitBurst    uint     `json:"rate_limit_burst"`
+	UpdateEvery       duration `json:"update_every"`
+	HTTPTimeout       duration `json:"http_timeout"`
+}
+
+func (c configProvider) GetName() string {
+	return c.Name
+}
+
+func (c configProvider) GetDirectory() string {
+	if c.Directory != "" {
+		return c.Directory
+	}
+
+	return c.Name
+}
+
+func (c configProvider) GetRateLimitInterval() time.Duration {
+	if c.RateLimitInterval.Duration == 0 {
+		return DefaultRateLimitInterval
+	}
+
+	return c.RateLimitInterval.Duration
+}
+
+func (c configProvider) GetRateLimitBurst() int {
+	if c.RateLimitBurst == 0 {
+		return DefaultRateLimitBurst
+	}
+
+	return int(c.RateLimitBurst)
+}
+
+func (c configProvider) GetUpdateEvery() time.Duration {
+	if c.UpdateEvery.Duration == 0 {
+		return DefaultUpdateEvery
+	}
+
+	return c.UpdateEvery.Duration
+}
+
+func (c configProvider) GetHTTPTimeout() time.Duration {
+	if c.HTTPTimeout.Duration == 0 {
+		return DefaultHTTPTimeout
+	}
+
+	return c.HTTPTimeout.Duration
 }
 
 func parseConfig(path string) (*config, error) {
@@ -64,31 +139,26 @@ func parseConfig(path string) (*config, error) {
 		return nil, fmt.Errorf("incorrect host:port for listen: %w", err)
 	}
 
-	directory, err := os.OpenFile(conf.RootDirectory, os.O_RDWR|os.O_CREATE, 0777)
-
-	switch {
-	case os.IsNotExist(err):
-		return nil, fmt.Errorf("directory %s is not exist", conf.RootDirectory)
-	case os.IsPermission(err):
-		return nil, fmt.Errorf("cannot open a directory with correct permissions: %w", err)
+	conf.RootDirectory, err = filepath.Abs(conf.GetRootDirectory())
+	if err != nil {
+		return nil, fmt.Errorf("incorrect root directory: %w", err)
 	}
 
-	directory.Close()
+	seenProviderNames := map[string]struct{}{}
+	seenDirectories := map[string]struct{}{}
 
-	seenNames := make(map[string]bool)
-
-	for i := range conf.Providers {
-		prov := conf.Providers[i]
-
-		if _, ok := seenNames[prov.Name]; ok {
-			return nil, fmt.Errorf("Name %s is duplicated", prov.Name)
+	for _, v := range conf.Providers {
+		if _, ok := seenProviderNames[v.GetName()]; ok {
+			return nil, fmt.Errorf("Name %s is duplicated", v.GetName())
 		}
 
-		seenNames[prov.Name] = true
+		seenProviderNames[v.GetName()] = struct{}{}
 
-		if prov.UpdateEvery.Duration == 0 {
-			prov.UpdateEvery.Duration = DefaultUpdateEvery
+		if _, ok := seenDirectories[v.GetDirectory()]; ok {
+			return nil, fmt.Errorf("Directory %s is duplicated", v.GetDirectory())
 		}
+
+		seenDirectories[v.GetDirectory()] = struct{}{}
 	}
 
 	return &conf, nil
