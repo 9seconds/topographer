@@ -58,6 +58,7 @@ func makeNewHTTPClient(conf configProvider) topolib.HTTPClient {
 	}
 
 	return topolib.NewHTTPClient(httpClient,
+		"topographer/"+version,
 		conf.GetRateLimitInterval(),
 		conf.GetRateLimitBurst())
 }

@@ -13,6 +13,7 @@ import (
 )
 
 type httpClient struct {
+	userAgent      string
 	client         *http.Client
 	rateLimiter    *rate.Limiter
 	circuitBreaker *circuitbreaker.CircuitBreaker
@@ -32,6 +33,8 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 	if err := h.rateLimiter.Wait(ctx); err != nil {
 		return nil, fmt.Errorf("cannot execute a request due to rate limiter: %w", err)
 	}
+
+	req.Header.Set("User-Agent", h.userAgent)
 
 	resp, err := h.circuitBreaker.Do(ctx, func() (interface{}, error) {
 		resp, err := h.client.Do(req.WithContext(ctx))
@@ -59,9 +62,11 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 func NewHTTPClient(client *http.Client,
+	userAgent string,
 	rateLimiterInterval time.Duration,
 	rateLimitBurst int) HTTPClient {
 	return httpClient{
+		userAgent:      userAgent,
 		client:         client,
 		rateLimiter:    rate.NewLimiter(rate.Every(rateLimiterInterval), rateLimitBurst),
 		circuitBreaker: circuitbreaker.New(nil),
