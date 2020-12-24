@@ -13,6 +13,8 @@ import (
 	"github.com/9seconds/topographer/topolib"
 )
 
+const NameIPInfo = "ipinfo"
+
 type ipinfoResponse struct {
 	City    string `json:"city"`
 	Country string `json:"country"`
@@ -24,7 +26,7 @@ type ipinfoProvider struct {
 }
 
 func (i ipinfoProvider) Name() string {
-	return "ipinfo"
+	return NameIPInfo
 }
 
 func (i ipinfoProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {

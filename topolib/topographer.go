@@ -190,7 +190,7 @@ func (t *Topographer) resolveIPLookup(ctx context.Context,
 	}
 
 	if res, err := provider.Lookup(ctx, ip); err != nil {
-		t.logger.LookupError(provider.Name(), err)
+		t.logger.LookupError(ip, provider.Name(), err)
 	} else {
 		detail.City = res.City
 		detail.CountryCode = strings.ToUpper(res.CountryCode)

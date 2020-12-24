@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net"
 	"os"
 
 	"github.com/9seconds/topographer/topolib"
@@ -12,8 +13,8 @@ type logger struct {
 	updateLog zerolog.Logger
 }
 
-func (l *logger) LookupError(name string, err error) {
-	l.lookupLog.Error().Str("provider", name).Err(err).Msg("")
+func (l *logger) LookupError(ip net.IP, name string, err error) {
+	l.lookupLog.Error().Str("provider", name).Stringer("ip", ip).Err(err).Msg("")
 }
 
 func (l *logger) UpdateInfo(name, msg string) {
@@ -28,7 +29,7 @@ func newLogger() topolib.Logger {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	return &logger{
-		lookupLog: zerolog.New(os.Stderr).With().Timestamp().Caller().Stack().Str("event_name", "lookup").Logger(),
-		updateLog: zerolog.New(os.Stderr).With().Timestamp().Caller().Stack().Str("event_name", "update").Logger(),
+		lookupLog: zerolog.New(os.Stderr).With().Timestamp().Stack().Str("event_name", "lookup").Logger(),
+		updateLog: zerolog.New(os.Stderr).With().Timestamp().Stack().Str("event_name", "update").Logger(),
 	}
 }

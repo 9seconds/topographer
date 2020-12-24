@@ -34,10 +34,12 @@ func makeProviders(conf *config) ([]topolib.Provider, error) {
 
 	for _, v := range conf.GetProviders() {
 		switch v.GetName() {
-		case "ip2c":
+		case providers.NameIP2C:
 			rv = append(rv, providers.NewIP2C(makeNewHTTPClient(v)))
-		case "ipinfo":
+		case providers.NameIPInfo:
 			rv = append(rv, providers.NewIPInfo(makeNewHTTPClient(v), v.GetSpecificParameters()))
+		case providers.NameKeyCDN:
+			rv = append(rv, providers.NewKeyCDN(makeNewHTTPClient(v)))
 		default:
 			return nil, fmt.Errorf("unsupported provider name: %s", v.GetName())
 		}

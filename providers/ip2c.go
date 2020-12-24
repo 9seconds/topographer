@@ -15,12 +15,14 @@ import (
 	"github.com/9seconds/topographer/topolib"
 )
 
+const NameIP2C = "ip2c"
+
 type ip2cProvider struct {
 	client topolib.HTTPClient
 }
 
 func (i ip2cProvider) Name() string {
-	return "ip2c"
+	return NameIP2C
 }
 
 func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {

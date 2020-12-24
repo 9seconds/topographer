@@ -26,7 +26,7 @@ type OfflineProvider interface {
 }
 
 type Logger interface {
-	LookupError(name string, err error)
+	LookupError(ip net.IP, name string, err error)
 	UpdateInfo(name, msg string)
 	UpdateError(name string, err error)
 }
