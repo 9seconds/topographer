@@ -11,7 +11,7 @@ GOTOOL := env "GOBIN=$(GOBIN)" "PATH=$(ROOT_DIR)/.bin:$(PATH)"
 all: build
 
 .PHONY: build
-	@go build
+	@go build -mod=readonly
 
 .PHONY: test
 test:
