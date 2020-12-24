@@ -3,8 +3,10 @@
     "root_directory": "/tmp",
     "providers": [
         {
-            "name": "ip2c",
-            "update_every": "1s"
+            "name": "ip2c"
+        },
+        {
+            "name": "ipinfo"
         }
     ]
 }

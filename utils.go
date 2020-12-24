@@ -36,6 +36,8 @@ func makeProviders(conf *config) ([]topolib.Provider, error) {
 		switch v.GetName() {
 		case "ip2c":
 			rv = append(rv, providers.NewIP2C(makeNewHTTPClient(v)))
+		case "ipinfo":
+			rv = append(rv, providers.NewIPInfo(makeNewHTTPClient(v), v.GetSpecificParameters()))
 		default:
 			return nil, fmt.Errorf("unsupported provider name: %s", v.GetName())
 		}

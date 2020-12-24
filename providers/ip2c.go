@@ -33,51 +33,47 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 
 	number := strconv.Itoa(int(binary.LittleEndian.Uint32(ip4)))
 
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://ip2c.org/?dec="+number, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://ip2c.org/?dec="+number, nil)
 	if err != nil {
 		return result, fmt.Errorf("cannot build a request: %w", err)
 	}
 
 	resp, err := i.client.Do(req)
-	defer func() {
-		if resp != nil {
-			io.Copy(ioutil.Discard, resp.Body)
-			resp.Body.Close()
-		}
-	}()
-
 	if err != nil {
 		return result, fmt.Errorf("cannot send a request: %w", err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return result, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-    bodyBytes, err := ioutil.ReadAll(bufio.NewReader(resp.Body))
-    if err != nil {
-        return  result, fmt.Errorf("cannot read response body: %w", err)
-    }
+	bodyBytes, err := ioutil.ReadAll(bufio.NewReader(resp.Body))
+	if err != nil {
+		return result, fmt.Errorf("cannot read response body: %w", err)
+	}
 
-    body := string(bodyBytes)
+	body := string(bodyBytes)
 
-    chunks := strings.SplitN(body, ";", 3)
-    switch {
-    case len(chunks) != 3:
-        return result, fmt.Errorf("incorrect response: %s", body)
-    case chunks[0] != "1":
-        return result, fmt.Errorf("ip2c cannot detect region: %s", body)
-    }
+	chunks := strings.SplitN(body, ";", 3)
+	switch {
+	case len(chunks) != 3:
+		return result, fmt.Errorf("incorrect response: %s", body)
+	case chunks[0] != "1":
+		return result, fmt.Errorf("ip2c cannot detect region: %s", body)
+	}
 
-    result.CountryCode = chunks[1]
+	result.CountryCode = chunks[1]
 
-    return result, nil
+	return result, nil
 }
 
 func NewIP2C(client topolib.HTTPClient) topolib.Provider {
-    return ip2cProvider{
-        client: client,
-    }
+	return ip2cProvider{
+		client: client,
+	}
 }

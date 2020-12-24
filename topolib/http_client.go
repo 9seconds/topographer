@@ -3,6 +3,8 @@ package topolib
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -32,7 +34,25 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	resp, err := h.circuitBreaker.Do(ctx, func() (interface{}, error) {
-		return h.client.Do(req.WithContext(ctx))
+		resp, err := h.client.Do(req.WithContext(ctx))
+
+		if err != nil {
+			if resp != nil {
+				io.Copy(ioutil.Discard, resp.Body)
+				resp.Body.Close()
+			}
+
+			return nil, err
+		}
+
+		if resp.StatusCode >= http.StatusBadRequest {
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+
+			return nil, fmt.Errorf("Netloc has responded with %s", resp.Status)
+		}
+
+		return resp, err
 	})
 
 	return resp.(*http.Response), err

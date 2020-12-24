@@ -63,7 +63,7 @@ func (c config) GetRootDirectory() string {
 }
 
 func (c config) GetWorkerPoolSize() int {
-    return int(c.WorkerPoolSize)
+	return int(c.WorkerPoolSize)
 }
 
 func (c config) GetProviders() []configProvider {
@@ -71,12 +71,13 @@ func (c config) GetProviders() []configProvider {
 }
 
 type configProvider struct {
-	Name              string   `json:"name"`
-	Directory         string   `json:"directory"`
-	RateLimitInterval duration `json:"rate_limit_interval"`
-	RateLimitBurst    uint     `json:"rate_limit_burst"`
-	UpdateEvery       duration `json:"update_every"`
-	HTTPTimeout       duration `json:"http_timeout"`
+	Name               string            `json:"name"`
+	Directory          string            `json:"directory"`
+	RateLimitInterval  duration          `json:"rate_limit_interval"`
+	RateLimitBurst     uint              `json:"rate_limit_burst"`
+	UpdateEvery        duration          `json:"update_every"`
+	HTTPTimeout        duration          `json:"http_timeout"`
+	SpecificParameters map[string]string `json:"specific_parameters"`
 }
 
 func (c configProvider) GetName() string {
@@ -121,6 +122,14 @@ func (c configProvider) GetHTTPTimeout() time.Duration {
 	}
 
 	return c.HTTPTimeout.Duration
+}
+
+func (c configProvider) GetSpecificParameters() map[string]string {
+    if c.SpecificParameters == nil {
+        return map[string]string{}
+    }
+
+    return c.SpecificParameters
 }
 
 func parseConfig(path string) (*config, error) {
