@@ -6,7 +6,10 @@ import (
 	"net/http"
 )
 
-var ErrTopographerShutdown = errors.New("topographer instance was shutdown")
+var (
+	ErrTopographerShutdown = errors.New("topographer instance was shutdown")
+	ErrContextIsClosed     = errors.New("context is closed")
+)
 
 type jsonHTTPError struct {
 	Error struct {

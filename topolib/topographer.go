@@ -11,18 +11,9 @@ import (
 	"github.com/antzucaro/matchr"
 	"github.com/panjf2000/ants/v2"
 	"github.com/pariz/gountries"
-	"golang.org/x/sync/errgroup"
 )
 
 const DefaultWorkerPoolSize = 4096
-
-type resolveIPRequest struct {
-	ctx           context.Context
-	ip            net.IP
-	providers     []Provider
-	resultChannel chan<- ResolveResult
-	wg            *sync.WaitGroup
-}
 
 type Topographer struct {
 	logger     Logger
@@ -49,34 +40,22 @@ func (t *Topographer) ResolveAll(ctx context.Context,
 		return nil, err
 	}
 
-	errGroup, ctx := errgroup.WithContext(ctx)
 	resultChannel := make(chan ResolveResult, len(ips))
 	rv := make([]ResolveResult, 0, len(ips))
-	taskWg := &sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
+	groupRequest := newPoolGroupRequest(ctx, resultChannel,
+		providersToUse, wg, t.workerPool)
 
 	for _, v := range ips {
-		errGroup.Go(func() error {
-			taskWg.Add(1)
-
-			return t.workerPool.Invoke(&resolveIPRequest{
-				ctx:           ctx,
-				ip:            v,
-				providers:     providersToUse,
-				resultChannel: resultChannel,
-				wg:            taskWg,
-			})
-		})
+		if err := groupRequest.Do(ctx, v); err != nil {
+			break
+		}
 	}
 
 	go func() {
-        errGroup.Wait() // nolint: errcheck
-		taskWg.Wait()
+		wg.Wait()
 		close(resultChannel)
 	}()
-
-	if err := errGroup.Wait(); err != nil {
-		return nil, fmt.Errorf("cannot start all tasks: %w", err)
-	}
 
 	for res := range resultChannel {
 		rv = append(rv, res)
@@ -95,30 +74,24 @@ func (t *Topographer) Resolve(ctx context.Context,
 		return ResolveResult{}, ErrTopographerShutdown
 	}
 
-	resultChannel := make(chan ResolveResult)
-	wg := &sync.WaitGroup{}
-    rv := ResolveResult{}
-
 	providersToUse, err := t.getProvidersToUse(providers)
 	if err != nil {
 		return ResolveResult{}, err
 	}
 
-	wg.Add(1)
+	resultChannel := make(chan ResolveResult)
+	wg := &sync.WaitGroup{}
+	rv := ResolveResult{}
+	groupRequest := newPoolGroupRequest(ctx, resultChannel,
+		providersToUse, wg, t.workerPool)
 
-	err = t.workerPool.Invoke(&resolveIPRequest{ // nolint: errcheck
-		ctx:           ctx,
-		ip:            ip,
-		providers:     providersToUse,
-		resultChannel: resultChannel,
-		wg:            wg,
-	})
-	if err != nil {
-		return rv, fmt.Errorf("cannot start task: %w", err)
+	if err := groupRequest.Do(ctx, ip); err != nil {
+		return rv, nil
 	}
 
 	rv = <-resultChannel
 
+	wg.Wait()
 	close(resultChannel)
 
 	return rv, nil
