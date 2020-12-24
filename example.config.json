@@ -1,6 +1,6 @@
 {
     "listen": ":8000",
-    "root_directory": "/tmp",
+    "root_directory": "/tmp/topographer",
     "providers": [
         {
             "name": "ip2c"
