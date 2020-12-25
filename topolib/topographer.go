@@ -128,7 +128,7 @@ func (t *Topographer) Shutdown() {
 		t.workerPool.Release()
 
 		for _, v := range t.providers {
-			if vv, ok := v.(OfflineProvider); ok {
+			if vv, ok := v.(*fsUpdater); ok {
 				vv.Shutdown()
 			}
 		}
@@ -265,7 +265,7 @@ func (t *Topographer) resolveIPMergeCity(results []*ResolveResultDetail) string 
 	return cityName
 }
 
-func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) *Topographer {
+func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) (*Topographer, error) {
 	rv := &Topographer{
 		logger:    logger,
 		countries: gountries.New(),
@@ -273,11 +273,23 @@ func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) *To
 	}
 
 	for _, v := range providers {
-		rv.providers[v.Name()] = v
-
 		if vv, ok := v.(OfflineProvider); ok {
-			go vv.Start()
+			ctx, cancel := context.WithCancel(context.Background())
+			updater := &fsUpdater{
+				ctx:      ctx,
+				cancel:   cancel,
+				logger:   logger,
+				provider: vv,
+			}
+
+			if err := updater.Start(); err != nil {
+				return nil, fmt.Errorf("cannot start provider %s: %w", v.Name(), err)
+			}
+
+			v = updater
 		}
+
+		rv.providers[v.Name()] = v
 	}
 
 	poolSize := workerPoolSize
@@ -288,5 +300,5 @@ func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) *To
 	rv.workerPool, _ = ants.NewPoolWithFunc(poolSize, rv.resolveIP,
 		ants.WithExpiryDuration(time.Minute))
 
-	return rv
+	return rv, nil
 }

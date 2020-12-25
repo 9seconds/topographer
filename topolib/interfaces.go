@@ -17,12 +17,11 @@ type Provider interface {
 type OfflineProvider interface {
 	Provider
 
-	Start()
 	Shutdown()
 	UpdateEvery() time.Duration
 	BaseDirectory() string
 	Open(afero.Fs) error
-	Download(afero.Fs) error
+	Download(context.Context, afero.Afero) error
 }
 
 type Logger interface {

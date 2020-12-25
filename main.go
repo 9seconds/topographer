@@ -60,7 +60,11 @@ func mainFunc() error {
 		return fmt.Errorf("cannot initialise a list of providers: %w", err)
 	}
 
-	topo := topolib.NewTopographer(providers, newLogger(), conf.GetWorkerPoolSize())
+	topo, err := topolib.NewTopographer(providers, newLogger(), conf.GetWorkerPoolSize())
+	if err != nil {
+		return fmt.Errorf("cannot initialize topographer: %w", err)
+	}
+
 	srv := &http.Server{
 		ReadTimeout:  DefaultReadTimeout,
 		WriteTimeout: DefaultWriteTimeout,

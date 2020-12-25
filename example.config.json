@@ -3,13 +3,7 @@
     "root_directory": "/tmp/topographer",
     "providers": [
         {
-            "name": "ip2c"
-        },
-        {
-            "name": "ipinfo"
-        },
-        {
-            "name": "keycdn"
+            "name": "dbip"
         }
     ]
 }
