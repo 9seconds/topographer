@@ -3,7 +3,8 @@
     "root_directory": "/tmp/topographer",
     "providers": [
         {
-            "name": "dbip"
+            "name": "dbip",
+            "http_timeout": "1m"
         }
     ]
 }
