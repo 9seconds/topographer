@@ -12,7 +12,7 @@ require (
 	github.com/qri-io/jsonschema v0.2.0
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/afero v1.5.1
-	github.com/stretchr/testify v1.6.1 // indirect
+	github.com/stretchr/testify v1.6.1
 	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	gopkg.in/yaml.v2 v2.4.0 // indirect

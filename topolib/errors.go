@@ -33,7 +33,7 @@ func (h *httpError) Message() string {
 }
 
 func (h *httpError) Err() string {
-	if err := h.Unwrap(); err != nil {
+	if err := errors.Unwrap(h); err != nil {
 		return err.Error()
 	}
 
@@ -41,11 +41,11 @@ func (h *httpError) Err() string {
 }
 
 func (h *httpError) StatusCode() int {
-	if h == nil {
-		return http.StatusInternalServerError
+	if h != nil && h.statusCode != 0 {
+		return h.statusCode
 	}
 
-	return h.statusCode
+	return http.StatusInternalServerError
 }
 
 func (h *httpError) Unwrap() error {
@@ -63,10 +63,10 @@ func (h *httpError) Error() string {
 	case h.err != nil && h.message != "":
 		return h.message + ": " + h.err.Error()
 	case h.err != nil:
-		return h.message
+		return h.err.Error()
 	}
 
-	return ""
+	return h.message
 }
 
 func (h *httpError) MarshalJSON() ([]byte, error) {
