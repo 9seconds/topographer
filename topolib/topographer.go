@@ -59,11 +59,13 @@ func (t *Topographer) ResolveAll(ctx context.Context,
 	ipsToIndex := map[string]int{}
 
 	for i, v := range ips {
-		if err := groupRequest.Do(ctx, v); err != nil {
+		vv := v.To16()
+
+		if err := groupRequest.Do(ctx, vv); err != nil {
 			break
 		}
 
-		ipsToIndex[v.String()] = i
+		ipsToIndex[string(vv)] = i
 	}
 
 	go func() {
@@ -76,7 +78,7 @@ func (t *Topographer) ResolveAll(ctx context.Context,
 	}
 
 	sort.Slice(rv, func(i, j int) bool {
-		return ipsToIndex[rv[i].IP.String()] < ipsToIndex[rv[j].IP.String()]
+		return ipsToIndex[string(rv[i].IP)] < ipsToIndex[string(rv[j].IP)]
 	})
 
 	return rv, nil
@@ -88,22 +90,22 @@ func (t *Topographer) Resolve(ctx context.Context,
 	t.rwmutex.RLock()
 	defer t.rwmutex.RUnlock()
 
+    ip = ip.To16()
+	rv := ResolveResult{
+		IP: ip,
+	}
+
 	if t.closed {
-		return ResolveResult{
-			IP: ip,
-		}, ErrTopographerShutdown
+		return rv, ErrTopographerShutdown
 	}
 
 	providersToUse, err := t.getProvidersToUse(providers)
 	if err != nil {
-		return ResolveResult{}, err
+		return rv, err
 	}
 
 	resultChannel := make(chan ResolveResult)
 	wg := &sync.WaitGroup{}
-	rv := ResolveResult{
-		IP: ip,
-	}
 	groupRequest := newPoolGroupRequest(ctx, resultChannel,
 		providersToUse, wg, t.workerPool)
 
@@ -244,7 +246,7 @@ func (t *Topographer) resolveIPMerge(ip net.IP, results []ResolveResultDetail) R
 	}
 
 	rv := ResolveResult{
-		IP:      ip,
+		IP:      ip.To16(),
 		Details: results,
 		City:    t.resolveIPMergeCity(cityResults),
 	}

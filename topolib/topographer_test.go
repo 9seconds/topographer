@@ -137,9 +137,7 @@ func (suite *TopographerTestSuite) TestResolveShutdown() {
 	res, err := suite.t.Resolve(context.Background(), ip, nil)
 
 	suite.True(errors.Is(err, topolib.ErrTopographerShutdown))
-	suite.Equal(res.IP.String(), ip.String())
-	suite.Equal("", res.City)
-	suite.Equal("", res.Country.CommonName)
+	suite.False(res.OK())
 }
 
 func (suite *TopographerTestSuite) TestResolveGivenCtxClosed() {
@@ -151,10 +149,7 @@ func (suite *TopographerTestSuite) TestResolveGivenCtxClosed() {
 	res, err := suite.t.Resolve(ctx, ip, nil)
 
 	suite.NoError(err)
-
-	suite.Equal(res.IP.String(), ip.String())
-	suite.Equal("", res.City)
-	suite.Equal("", res.Country.CommonName)
+	suite.False(res.OK())
 }
 
 func (suite *TopographerTestSuite) TestResolveUnknownProvider() {
@@ -162,7 +157,7 @@ func (suite *TopographerTestSuite) TestResolveUnknownProvider() {
 	res, err := suite.t.Resolve(context.Background(), ip, []string{"o0", "u"})
 
 	suite.EqualError(err, "provider u is unknown")
-	suite.Empty(res)
+	suite.False(res.OK())
 }
 
 func (suite *TopographerTestSuite) TestResolveAllShutdown() {
@@ -175,7 +170,7 @@ func (suite *TopographerTestSuite) TestResolveAllShutdown() {
 	suite.Empty(res)
 }
 
-func (suite *TopographerTestSuite) TestReslveAllGivenCtxClosed() {
+func (suite *TopographerTestSuite) TestResolveAllGivenCtxClosed() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cancel()

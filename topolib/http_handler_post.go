@@ -110,6 +110,14 @@ func (h httpHandler) handlePost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	for i := range resolved {
+		if !resolved[i].OK() {
+			h.sendError(w, nil, "Cannot resolve IP address yet", http.StatusServiceUnavailable)
+
+			return
+		}
+	}
+
 	respEnvelope := handlePostResponse{
 		Results: resolved,
 	}

@@ -14,6 +14,10 @@ type ResolveResult struct {
 	Details []ResolveResultDetail `json:"details"`
 }
 
+func (r *ResolveResult) OK() bool {
+	return r.Country.Alpha2Code != "" && r.City != ""
+}
+
 type ResolveResultDetail struct {
 	ProviderName string `json:"provider_name"`
 	CountryCode  string `json:"country_code"`

@@ -31,6 +31,12 @@ func (h httpHandler) handleGet(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+    if !resolved.OK() {
+        h.sendError(w, nil, "Cannot resolve IP address yet", http.StatusServiceUnavailable)
+
+        return
+    }
+
 	respEnvelope := handleGetResponse{
 		Result: resolved,
 	}
