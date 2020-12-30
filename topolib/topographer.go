@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -27,7 +28,7 @@ type Topographer struct {
 }
 
 func (t *Topographer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-    httpHandler{t}.ServeHTTP(w, req)
+	httpHandler{t}.ServeHTTP(w, req)
 }
 
 func (t *Topographer) ResolveAll(ctx context.Context,
@@ -51,10 +52,14 @@ func (t *Topographer) ResolveAll(ctx context.Context,
 	groupRequest := newPoolGroupRequest(ctx, resultChannel,
 		providersToUse, wg, t.workerPool)
 
-	for _, v := range ips {
+	ipsToIndex := map[string]int{}
+
+	for i, v := range ips {
 		if err := groupRequest.Do(ctx, v); err != nil {
 			break
 		}
+
+		ipsToIndex[v.String()] = i
 	}
 
 	go func() {
@@ -65,6 +70,10 @@ func (t *Topographer) ResolveAll(ctx context.Context,
 	for res := range resultChannel {
 		rv = append(rv, res)
 	}
+
+	sort.Slice(rv, func(i, j int) bool {
+		return ipsToIndex[rv[i].IP.String()] < ipsToIndex[rv[j].IP.String()]
+	})
 
 	return rv, nil
 }

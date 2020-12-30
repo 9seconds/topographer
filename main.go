@@ -68,7 +68,7 @@ func mainFunc() error {
 	srv := &http.Server{
 		ReadTimeout:  DefaultReadTimeout,
 		WriteTimeout: DefaultWriteTimeout,
-		Handler:      topolib.NewHTTPHandler(topo),
+		Handler:      topo,
 	}
 	closeChan := make(chan struct{})
 
