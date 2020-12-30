@@ -15,7 +15,11 @@ import (
 	"github.com/pariz/gountries"
 )
 
-const DefaultWorkerPoolSize = 4096
+const (
+	DefaultWorkerPoolSize = 4096
+
+	workerPoolExpireTime = time.Minute
+)
 
 type Topographer struct {
 	logger     Logger
@@ -312,7 +316,7 @@ func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) (*T
 	}
 
 	rv.workerPool, _ = ants.NewPoolWithFunc(poolSize, rv.resolveIP,
-		ants.WithExpiryDuration(time.Minute))
+		ants.WithExpiryDuration(workerPoolExpireTime))
 
 	return rv, nil
 }
