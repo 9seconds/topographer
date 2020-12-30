@@ -89,7 +89,9 @@ func (t *Topographer) Resolve(ctx context.Context,
 	defer t.rwmutex.RUnlock()
 
 	if t.closed {
-		return ResolveResult{}, ErrTopographerShutdown
+		return ResolveResult{
+			IP: ip,
+		}, ErrTopographerShutdown
 	}
 
 	providersToUse, err := t.getProvidersToUse(providers)
@@ -99,7 +101,9 @@ func (t *Topographer) Resolve(ctx context.Context,
 
 	resultChannel := make(chan ResolveResult)
 	wg := &sync.WaitGroup{}
-	rv := ResolveResult{}
+	rv := ResolveResult{
+		IP: ip,
+	}
 	groupRequest := newPoolGroupRequest(ctx, resultChannel,
 		providersToUse, wg, t.workerPool)
 
