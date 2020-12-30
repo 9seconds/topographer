@@ -38,9 +38,3 @@ func (h httpHandler) sendError(w http.ResponseWriter, err error, message string,
 	w.WriteHeader(e.StatusCode())
 	h.encodeJSON(w, e)
 }
-
-func NewHTTPHandler(topo *Topographer) http.Handler {
-	return httpHandler{
-		topo: topo,
-	}
-}

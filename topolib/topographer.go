@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -23,6 +24,10 @@ type Topographer struct {
 	countries  *gountries.Query
 	workerPool *ants.PoolWithFunc
 	closed     bool
+}
+
+func (t *Topographer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+    httpHandler{t}.ServeHTTP(w, req)
 }
 
 func (t *Topographer) ResolveAll(ctx context.Context,
