@@ -41,7 +41,7 @@ func (f *fsUpdater) Lookup(ctx context.Context, ip net.IP) (ProviderLookupResult
 
 func (f *fsUpdater) Start() error {
 	if err := f.doInitialCleaning(); err != nil {
-		return fmt.Errorf("cannot start provider: %w", err)
+		return fmt.Errorf("cannot do an initial cleaning: %w", err)
 	}
 
 	targetDir, err := f.getTargetDir()
