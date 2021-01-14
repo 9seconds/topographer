@@ -111,9 +111,48 @@ func (suite *FsUpdaterTestSuite) TestInitialCleaning() {
 
 	infos, err := ioutil.ReadDir(suite.baseDir)
 
+	suite.NoError(err)
 	suite.Len(infos, 1)
-
 	suite.Equal(filepath.Base(targetDir), infos[0].Name())
+}
+
+func (suite *FsUpdaterTestSuite) TestOk() {
+	targetDir, err := ioutil.TempDir(suite.baseDir, FsTargetDirPrefix)
+
+	suite.NoError(err)
+
+	defer os.RemoveAll(targetDir)
+
+	suite.providerMock.On("Download", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+		fs := args.Get(1).(afero.Fs)
+
+		fp, err := fs.Create("filename")
+
+		suite.NoError(err)
+
+		fp.WriteString("Hello")
+
+		suite.NoError(fs.MkdirAll(filepath.Join("path", "to"), 0777))
+
+		fp, err = fs.Create(filepath.Join("path", "to", "file"))
+
+		suite.NoError(err)
+
+		fp.WriteString("OK")
+	})
+	suite.providerMock.On("Open", mock.Anything).Return(nil)
+
+	suite.NoError(suite.u.Start())
+
+	time.Sleep(200 * time.Millisecond)
+
+	infos, err := ioutil.ReadDir(suite.baseDir)
+
+	suite.NoError(err)
+	suite.Len(infos, 1)
+	suite.Equal(
+		"target_4c182b523da15532e3097f3a763615925df2e961939ff4930f5945dfd953c714",
+		infos[0].Name())
 }
 
 func TestFsUpdater(t *testing.T) {
