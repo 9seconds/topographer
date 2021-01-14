@@ -21,20 +21,20 @@ type httpClient struct {
 
 func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 	if h.client.Timeout > 0 {
-        ctx, _ := context.WithTimeout(req.Context(), h.client.Timeout) // nolint: govet
+		ctx, _ := context.WithTimeout(req.Context(), h.client.Timeout) // nolint: govet
 		req = req.WithContext(ctx)
 	}
 
-    ctx := req.Context()
-
-	if err := h.rateLimiter.Wait(ctx); err != nil {
-		return nil, fmt.Errorf("cannot execute a request due to rate limiter: %w", err)
-	}
+	ctx := req.Context()
 
 	req.Header.Set("User-Agent", h.userAgent)
 
 	resp, err := h.circuitBreaker.Do(ctx, func() (interface{}, error) {
 		resp, err := h.client.Do(req.WithContext(ctx))
+
+		if err := h.rateLimiter.Wait(ctx); err != nil {
+			return nil, circuitbreaker.Ignore(fmt.Errorf("rate limited: %w", err))
+		}
 
 		if err != nil {
 			if resp != nil {
@@ -55,9 +55,9 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 		return resp, err
 	})
 
-    if resp == nil {
-        return nil, err
-    }
+	if resp == nil {
+		return nil, err
+	}
 
 	return resp.(*http.Response), err
 }

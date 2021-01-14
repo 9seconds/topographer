@@ -6,6 +6,7 @@ require (
 	github.com/antchfx/htmlquery v1.2.3
 	github.com/antzucaro/matchr v0.0.0-20191224151129-ab6ba461ddec
 	github.com/leaanthony/clir v1.0.4
+	github.com/mccutchen/go-httpbin v1.1.1
 	github.com/mercari/go-circuitbreaker v0.0.0-20201130021310-aff740600e91
 	github.com/panjf2000/ants/v2 v2.4.3
 	github.com/pariz/gountries v0.0.0-20200430155801-1c6a393df9c7
