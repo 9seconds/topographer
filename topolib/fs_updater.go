@@ -205,15 +205,15 @@ func (f *fsUpdater) getTargetDirName(fs afero.Fs) (string, error) {
 	fileSign := []byte{1}
 
 	err := afero.Walk(fs, ".", func(path string, info os.FileInfo, err error) error {
-		hasher.Write(startSign)      // nolint: errcheck
-		io.WriteString(hasher, path) // nolint: errcheck
-
 		switch {
 		case err != nil:
 			return err
 		case info.IsDir():
 			return nil
 		}
+
+		hasher.Write(startSign)      // nolint: errcheck
+		io.WriteString(hasher, path) // nolint: errcheck
 
 		fp, err := fs.Open(path)
 		if err != nil {

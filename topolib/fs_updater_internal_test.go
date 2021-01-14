@@ -96,7 +96,7 @@ func (suite *FsUpdaterTestSuite) TestInitialCleaning() {
 
 		suite.NoError(err)
 
-		fp.WriteString("hello")
+        fp.WriteString("hello") // nolint: errcheck
 
 		content, err := ioutil.ReadFile(filepath.Join(targetDir, "myfile"))
 
@@ -130,7 +130,7 @@ func (suite *FsUpdaterTestSuite) TestOk() {
 
 		suite.NoError(err)
 
-		fp.WriteString("Hello")
+        fp.WriteString("Hello") // nolint: errcheck
 
 		suite.NoError(fs.MkdirAll(filepath.Join("path", "to"), 0777))
 
@@ -138,7 +138,7 @@ func (suite *FsUpdaterTestSuite) TestOk() {
 
 		suite.NoError(err)
 
-		fp.WriteString("OK")
+        fp.WriteString("OK") // nolint: errcheck
 	})
 	suite.providerMock.On("Open", mock.Anything).Return(nil)
 
@@ -151,7 +151,7 @@ func (suite *FsUpdaterTestSuite) TestOk() {
 	suite.NoError(err)
 	suite.Len(infos, 1)
 	suite.Equal(
-		"target_4c182b523da15532e3097f3a763615925df2e961939ff4930f5945dfd953c714",
+		"target_2a58c90eb7ef89d2aaddcfbe3b46ef2bea493915b54c2e4906a03e698be49dc3",
 		infos[0].Name())
 }
 
