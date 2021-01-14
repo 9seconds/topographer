@@ -49,7 +49,7 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 			io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 			resp.Body.Close()
 
-			return nil, fmt.Errorf("Netloc has responded with %s", resp.Status)
+			return nil, fmt.Errorf("netloc has responded with %s", resp.Status)
 		}
 
 		return resp, err
