@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/qri-io/jsonschema"
 )
@@ -65,7 +66,7 @@ type handlePostResponse struct {
 }
 
 func (h httpHandler) handlePost(w http.ResponseWriter, req *http.Request) {
-	if req.Header.Get("Content-Type") != "application/json" {
+	if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
 		h.sendError(w, nil, "Incorrect content type", http.StatusUnsupportedMediaType)
 
 		return
