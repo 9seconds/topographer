@@ -33,7 +33,7 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 		return result, fmt.Errorf("incorrect ipv4 %v", ip)
 	}
 
-	number := strconv.Itoa(int(binary.LittleEndian.Uint32(ip4)))
+	number := strconv.Itoa(int(binary.BigEndian.Uint32(ip4)))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://ip2c.org/?dec="+number, nil)
 	if err != nil {
@@ -46,7 +46,7 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 	}
 
 	defer func() {
-        io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
+		io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 		resp.Body.Close()
 	}()
 
