@@ -22,8 +22,7 @@ import (
 )
 
 var (
-	errDBIPFoundNothinOnPage = errors.New("could not find anything on a page")
-
+	dbipErrNothingOnPage   = errors.New("could not find anything on a page")
 	dbipUrlRegexp          = regexp.MustCompile(`https?:\/\/download\.db-ip\.com\/free\/.*?\.mmdb\.gz`)
 	dbipSha1ChecksumRegexp = regexp.MustCompile(`[0-9a-fA-F]{40}`)
 )
@@ -115,7 +114,7 @@ func (d *dbipProvider) getFileData(ctx context.Context) (string, string, error) 
 		}
 	}
 
-	return "", "", errDBIPFoundNothinOnPage
+	return "", "", dbipErrNothingOnPage
 }
 
 func (d *dbipProvider) downloadFile(ctx context.Context, fs afero.Afero, url, sha1sum string) error {

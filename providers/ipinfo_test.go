@@ -52,6 +52,17 @@ func (suite *MockedIPInfoTestSuite) TestLookupFailed() {
 	suite.Error(err)
 }
 
+func (suite *MockedIPInfoTestSuite) TestLookupBadJSON() {
+	httpmock.RegisterResponder("GET",
+		"https://ipinfo.io/23.22.13.113",
+		httpmock.NewStringResponder(http.StatusOK, `{[`))
+
+	_, err := suite.prov.Lookup(context.Background(),
+		net.ParseIP("23.22.13.113"))
+
+	suite.Error(err)
+}
+
 func (suite *MockedIPInfoTestSuite) TestLookupOk() {
 	httpmock.RegisterResponder("GET",
 		"https://ipinfo.io/23.22.13.113",
