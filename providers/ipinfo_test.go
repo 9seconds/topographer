@@ -8,19 +8,17 @@ import (
 	"testing"
 
 	"github.com/9seconds/topographer/providers"
-	"github.com/9seconds/topographer/topolib"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/suite"
 )
 
 type MockedIPInfoTestSuite struct {
-	MockedProviderTestSuite
-
-	prov topolib.Provider
+	OnlineProviderTestSuite
+	HTTPMockMixin
 }
 
 func (suite *MockedIPInfoTestSuite) SetupTest() {
-	suite.MockedProviderTestSuite.SetupTest()
+	suite.OnlineProviderTestSuite.SetupTest()
 
 	suite.prov = providers.NewIPInfo(suite.http, map[string]string{
 		"auth_token": "token",
@@ -87,13 +85,11 @@ func (suite *MockedIPInfoTestSuite) TestLookupOk() {
 }
 
 type IntegrationIPInfoTestSuite struct {
-	ProviderTestSuite
-
-	prov topolib.Provider
+	OnlineProviderTestSuite
 }
 
 func (suite *IntegrationIPInfoTestSuite) SetupTest() {
-	suite.ProviderTestSuite.SetupTest()
+	suite.OnlineProviderTestSuite.SetupTest()
 
 	suite.prov = providers.NewIPInfo(suite.http, map[string]string{})
 }

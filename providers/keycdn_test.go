@@ -8,19 +8,17 @@ import (
 	"testing"
 
 	"github.com/9seconds/topographer/providers"
-	"github.com/9seconds/topographer/topolib"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/suite"
 )
 
 type MockedKeyCDNTestSuite struct {
-	MockedProviderTestSuite
-
-	prov topolib.Provider
+	OnlineProviderTestSuite
+	HTTPMockMixin
 }
 
 func (suite *MockedKeyCDNTestSuite) SetupTest() {
-	suite.MockedProviderTestSuite.SetupTest()
+	suite.OnlineProviderTestSuite.SetupTest()
 
 	suite.prov = providers.NewKeyCDN(suite.http)
 }
@@ -99,13 +97,11 @@ func (suite *MockedKeyCDNTestSuite) TestOk() {
 }
 
 type IntegrationKeyCDNTestSuite struct {
-	ProviderTestSuite
-
-	prov topolib.Provider
+	OnlineProviderTestSuite
 }
 
 func (suite *IntegrationKeyCDNTestSuite) SetupTest() {
-	suite.ProviderTestSuite.SetupTest()
+	suite.OnlineProviderTestSuite.SetupTest()
 
 	suite.prov = providers.NewKeyCDN(suite.http)
 }

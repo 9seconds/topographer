@@ -1,9 +1,7 @@
 package providers_test
 
 import (
-	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/9seconds/topographer/topolib"
@@ -14,8 +12,7 @@ import (
 type ProviderTestSuite struct {
 	suite.Suite
 
-	http          topolib.HTTPClient
-	baseDirectory string
+	http topolib.HTTPClient
 }
 
 func (suite *ProviderTestSuite) SetupTest() {
@@ -23,31 +20,24 @@ func (suite *ProviderTestSuite) SetupTest() {
 		"test-agent",
 		time.Millisecond,
 		100)
-
-	dir, err := ioutil.TempDir("", "topo_int_test_")
-	if err != nil {
-		panic(err)
-	}
-
-	suite.baseDirectory = dir
 }
 
-func (suite *ProviderTestSuite) TearDownTest() {
-	os.RemoveAll(suite.baseDirectory)
-}
-
-type MockedProviderTestSuite struct {
+type OnlineProviderTestSuite struct {
 	ProviderTestSuite
+
+	prov topolib.Provider
 }
 
-func (suite *MockedProviderTestSuite) SetupSuite() {
+type HTTPMockMixin struct{}
+
+func (suite *HTTPMockMixin) SetupSuite() {
 	httpmock.Activate()
 }
 
-func (suite *MockedProviderTestSuite) TearDownSuite() {
+func (suite *HTTPMockMixin) TearDownSuite() {
 	httpmock.DeactivateAndReset()
 }
 
-func (suite *MockedProviderTestSuite) TearDownTest() {
+func (suite *HTTPMockMixin) TearDownTest() {
 	httpmock.Reset()
 }

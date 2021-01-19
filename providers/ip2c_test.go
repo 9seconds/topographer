@@ -8,19 +8,17 @@ import (
 	"testing"
 
 	"github.com/9seconds/topographer/providers"
-	"github.com/9seconds/topographer/topolib"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/suite"
 )
 
 type MockedIP2CTestSuite struct {
-	MockedProviderTestSuite
-
-	prov topolib.Provider
+	OnlineProviderTestSuite
+	HTTPMockMixin
 }
 
 func (suite *MockedIP2CTestSuite) SetupTest() {
-	suite.MockedProviderTestSuite.SetupTest()
+	suite.OnlineProviderTestSuite.SetupTest()
 
 	suite.prov = providers.NewIP2C(suite.http)
 }
@@ -81,17 +79,15 @@ func (suite *MockedIP2CTestSuite) TestLookupOk() {
 		net.ParseIP("5.6.7.8"))
 
 	suite.NoError(err)
-    suite.Equal("DE", strings.ToUpper(result.CountryCode))
+	suite.Equal("DE", strings.ToUpper(result.CountryCode))
 }
 
 type IntegrationIP2CTestSuite struct {
-	ProviderTestSuite
-
-	prov topolib.Provider
+	OnlineProviderTestSuite
 }
 
 func (suite *IntegrationIP2CTestSuite) SetupTest() {
-	suite.ProviderTestSuite.SetupTest()
+	suite.OnlineProviderTestSuite.SetupTest()
 
 	suite.prov = providers.NewIP2C(suite.http)
 }
