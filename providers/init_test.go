@@ -25,7 +25,20 @@ func (suite *ProviderTestSuite) SetupTest() {
 type OnlineProviderTestSuite struct {
 	ProviderTestSuite
 
-	prov topolib.Provider
+	prov topolib.Provider // nolint: structcheck
+}
+
+type OfflineProviderTestSuite struct {
+	ProviderTestSuite
+
+	prov topolib.OfflineProvider
+}
+
+func (suite *OfflineProviderTestSuite) TearDownTest() {
+	if suite.prov != nil {
+		suite.prov.Shutdown()
+		suite.prov = nil
+	}
 }
 
 type HTTPMockMixin struct{}

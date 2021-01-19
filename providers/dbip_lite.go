@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -22,44 +23,48 @@ import (
 )
 
 var (
-	dbipErrNothingOnPage   = errors.New("could not find anything on a page")
-	dbipUrlRegexp          = regexp.MustCompile(`https?:\/\/download\.db-ip\.com\/free\/.*?\.mmdb\.gz`)
-	dbipSha1ChecksumRegexp = regexp.MustCompile(`[0-9a-fA-F]{40}`)
+	dbipLiteErrNothingOnPage   = errors.New("could not find anything on a page")
+	dbipLiteUrlRegexp          = regexp.MustCompile(`https?:\/\/download\.db-ip\.com\/free\/.*?\.mmdb\.gz`)
+	dbipLiteSha1ChecksumRegexp = regexp.MustCompile(`[0-9a-fA-F]{40}`)
 )
 
-const NameDBIP = "dbip"
+const (
+	NameDBIPLite = "dbip_lite"
 
-type dbipProvider struct {
+	dbipLiteFileName = "database.mmdb"
+)
+
+type dbipLiteProvider struct {
 	baseDirectory string
 	updateEvery   time.Duration
 	client        topolib.HTTPClient
 }
 
-func (d *dbipProvider) Name() string {
-	return NameDBIP
+func (d *dbipLiteProvider) Name() string {
+	return NameDBIPLite
 }
 
-func (d *dbipProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
+func (d *dbipLiteProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
 	return topolib.ProviderLookupResult{}, nil
 }
 
-func (d *dbipProvider) Shutdown() {
+func (d *dbipLiteProvider) Shutdown() {
 
 }
 
-func (d *dbipProvider) UpdateEvery() time.Duration {
+func (d *dbipLiteProvider) UpdateEvery() time.Duration {
 	return d.updateEvery
 }
 
-func (d *dbipProvider) BaseDirectory() string {
+func (d *dbipLiteProvider) BaseDirectory() string {
 	return d.baseDirectory
 }
 
-func (d *dbipProvider) Open(fs afero.Fs) error {
+func (d *dbipLiteProvider) Open(fs afero.Fs) error {
 	return nil
 }
 
-func (d *dbipProvider) Download(ctx context.Context, fs afero.Afero) error {
+func (d *dbipLiteProvider) Download(ctx context.Context, fs afero.Afero) error {
 	url, sha1sum, err := d.getFileData(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot parse html page: %w", err)
@@ -72,7 +77,7 @@ func (d *dbipProvider) Download(ctx context.Context, fs afero.Afero) error {
 	return nil
 }
 
-func (d *dbipProvider) getFileData(ctx context.Context) (string, string, error) {
+func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
 		"https://db-ip.com/db/download/ip-to-city-lite", nil)
 	if err != nil {
@@ -89,7 +94,7 @@ func (d *dbipProvider) getFileData(ctx context.Context) (string, string, error) 
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, htmlPageResp.Body)
+        io.Copy(ioutil.Discard, htmlPageResp.Body) // nolint: errcheck
 		htmlPageResp.Body.Close()
 	}()
 
@@ -101,23 +106,23 @@ func (d *dbipProvider) getFileData(ctx context.Context) (string, string, error) 
 	for _, cardNode := range htmlquery.Find(tree, `//div[@class="card"]`) {
 		for _, urlNode := range htmlquery.Find(cardNode, `//a[contains(@class, "free_download_link") and @href]`) {
 			url := htmlquery.SelectAttr(urlNode, "href")
-			if !dbipUrlRegexp.MatchString(url) {
+			if !dbipLiteUrlRegexp.MatchString(url) {
 				continue
 			}
 
 			for _, ddNode := range htmlquery.Find(cardNode, `//dd[@class="small"]`) {
 				text := htmlquery.InnerText(ddNode)
-				if dbipSha1ChecksumRegexp.MatchString(text) {
+				if dbipLiteSha1ChecksumRegexp.MatchString(text) {
 					return url, text, nil
 				}
 			}
 		}
 	}
 
-	return "", "", dbipErrNothingOnPage
+	return "", "", dbipLiteErrNothingOnPage
 }
 
-func (d *dbipProvider) downloadFile(ctx context.Context, fs afero.Afero, url, sha1sum string) error {
+func (d *dbipLiteProvider) downloadFile(ctx context.Context, fs afero.Afero, url, sha1sum string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Errorf("cannot compose a request: %w", err)
@@ -129,16 +134,16 @@ func (d *dbipProvider) downloadFile(ctx context.Context, fs afero.Afero, url, sh
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, fileResp.Body)
+        io.Copy(ioutil.Discard, fileResp.Body) // nolint: errcheck
 		fileResp.Body.Close()
 	}()
 
-	fileReader, err := gzip.NewReader(bufio.NewReader(fileResp.Body))
+	fileReader, err := gzip.NewReader(fileResp.Body)
 	if err != nil {
 		return fmt.Errorf("cannot create a gzip reader: %w", err)
 	}
 
-	db, err := fs.Create("database")
+	db, err := fs.OpenFile(dbipLiteFileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("cannot open a target file: %w", err)
 	}
@@ -158,8 +163,8 @@ func (d *dbipProvider) downloadFile(ctx context.Context, fs afero.Afero, url, sh
 	return nil
 }
 
-func NewDBIP(client topolib.HTTPClient, updateEvery time.Duration, baseDirectory string) topolib.OfflineProvider {
-	return &dbipProvider{
+func NewDBIPLite(client topolib.HTTPClient, updateEvery time.Duration, baseDirectory string) topolib.OfflineProvider {
+	return &dbipLiteProvider{
 		client:        client,
 		updateEvery:   updateEvery,
 		baseDirectory: baseDirectory,

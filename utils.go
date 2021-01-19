@@ -41,13 +41,13 @@ func makeProviders(conf *config) ([]topolib.Provider, error) {
 			rv = append(rv, providers.NewIPInfo(makeNewHTTPClient(v), v.GetSpecificParameters()))
 		case providers.NameKeyCDN:
 			rv = append(rv, providers.NewKeyCDN(makeNewHTTPClient(v)))
-		case providers.NameDBIP:
+		case providers.NameDBIPLite:
 			baseDir := filepath.Join(conf.GetRootDirectory(), v.GetDirectory())
 			if err := os.MkdirAll(baseDir, 0777); err != nil {
 				return nil, fmt.Errorf("cannot create base directory for dbip provider: %w", err)
 			}
 
-			rv = append(rv, providers.NewDBIP(makeNewHTTPClient(v), v.GetUpdateEvery(), baseDir))
+			rv = append(rv, providers.NewDBIPLite(makeNewHTTPClient(v), v.GetUpdateEvery(), baseDir))
 		default:
 			return nil, fmt.Errorf("unsupported provider name: %s", v.GetName())
 		}
