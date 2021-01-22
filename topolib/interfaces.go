@@ -20,7 +20,7 @@ type OfflineProvider interface {
 	Shutdown()
 	UpdateEvery() time.Duration
 	BaseDirectory() string
-	Open(afero.Fs) error
+	Open(*afero.BasePathFs) error
 	Download(context.Context, afero.Afero) error
 }
 

@@ -195,8 +195,8 @@ func (f *fsUpdater) getBaseFs() afero.Afero {
 	}
 }
 
-func (f *fsUpdater) getTargetFs(name string) afero.Fs {
-	return afero.NewBasePathFs(f.getBaseFs().Fs, name)
+func (f *fsUpdater) getTargetFs(name string) *afero.BasePathFs {
+	return afero.NewBasePathFs(f.getBaseFs().Fs, name).(*afero.BasePathFs)
 }
 
 func (f *fsUpdater) getTargetDirName(fs afero.Fs) (string, error) {

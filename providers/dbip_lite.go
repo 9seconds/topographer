@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -35,21 +34,15 @@ const (
 )
 
 type dbipLiteProvider struct {
+	maxmindBase
+
 	baseDirectory string
 	updateEvery   time.Duration
-	client        topolib.HTTPClient
+	httpClient    topolib.HTTPClient
 }
 
 func (d *dbipLiteProvider) Name() string {
 	return NameDBIPLite
-}
-
-func (d *dbipLiteProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
-	return topolib.ProviderLookupResult{}, nil
-}
-
-func (d *dbipLiteProvider) Shutdown() {
-
 }
 
 func (d *dbipLiteProvider) UpdateEvery() time.Duration {
@@ -58,10 +51,6 @@ func (d *dbipLiteProvider) UpdateEvery() time.Duration {
 
 func (d *dbipLiteProvider) BaseDirectory() string {
 	return d.baseDirectory
-}
-
-func (d *dbipLiteProvider) Open(fs afero.Fs) error {
-	return nil
 }
 
 func (d *dbipLiteProvider) Download(ctx context.Context, fs afero.Afero) error {
@@ -84,7 +73,7 @@ func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, err
 		return "", "", fmt.Errorf("cannot compose a request: %w", err)
 	}
 
-	htmlPageResp, err := d.client.Do(req)
+	htmlPageResp, err := d.httpClient.Do(req)
 	if err != nil {
 		return "", "", fmt.Errorf("cannot request a download page: %w", err)
 	}
@@ -94,7 +83,7 @@ func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, err
 	}
 
 	defer func() {
-        io.Copy(ioutil.Discard, htmlPageResp.Body) // nolint: errcheck
+		io.Copy(ioutil.Discard, htmlPageResp.Body) // nolint: errcheck
 		htmlPageResp.Body.Close()
 	}()
 
@@ -128,13 +117,13 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, fs afero.Afero, url
 		return fmt.Errorf("cannot compose a request: %w", err)
 	}
 
-	fileResp, err := d.client.Do(req)
+	fileResp, err := d.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("cannot download a file: %w", err)
 	}
 
 	defer func() {
-        io.Copy(ioutil.Discard, fileResp.Body) // nolint: errcheck
+		io.Copy(ioutil.Discard, fileResp.Body) // nolint: errcheck
 		fileResp.Body.Close()
 	}()
 
@@ -163,9 +152,9 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, fs afero.Afero, url
 	return nil
 }
 
-func NewDBIPLite(client topolib.HTTPClient, updateEvery time.Duration, baseDirectory string) topolib.OfflineProvider {
+func NewDBIPLite(httpClient topolib.HTTPClient, updateEvery time.Duration, baseDirectory string) topolib.OfflineProvider {
 	return &dbipLiteProvider{
-		client:        client,
+		httpClient:    httpClient,
 		updateEvery:   updateEvery,
 		baseDirectory: baseDirectory,
 	}

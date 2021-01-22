@@ -245,6 +245,23 @@ func (suite *MockedDBIPTestSuite) TestDownloadOk() {
 	suite.NoError(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
 }
 
+type IntegrationDBIPTestSuite struct {
+	OfflineProviderTestSuite
+}
+
+func (suite *IntegrationDBIPTestSuite) TestDownload() {
+    prov := providers.NewDBIPLite(suite.http, time.Minute, "")
+    af := afero.Afero{
+        Fs: afero.NewMemMapFs(),
+    }
+
+	suite.NoError(prov.Download(context.Background(), af))
+}
+
 func TestDBIP(t *testing.T) {
 	suite.Run(t, &MockedDBIPTestSuite{})
+}
+
+func TestIntegrationDBIP(t *testing.T) {
+	suite.Run(t, &IntegrationDBIPTestSuite{})
 }
