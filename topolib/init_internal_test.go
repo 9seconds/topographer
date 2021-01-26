@@ -39,7 +39,7 @@ func (m *OfflineProviderMock) BaseDirectory() string {
 	return m.Called().String(0)
 }
 
-func (m *OfflineProviderMock) Open(fs afero.Fs) error {
+func (m *OfflineProviderMock) Open(fs *afero.BasePathFs) error {
 	return m.Called(fs).Error(0)
 }
 

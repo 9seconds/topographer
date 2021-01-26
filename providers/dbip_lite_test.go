@@ -250,10 +250,10 @@ type IntegrationDBIPTestSuite struct {
 }
 
 func (suite *IntegrationDBIPTestSuite) TestDownload() {
-    prov := providers.NewDBIPLite(suite.http, time.Minute, "")
-    af := afero.Afero{
-        Fs: afero.NewMemMapFs(),
-    }
+	prov := providers.NewDBIPLite(suite.http, time.Minute, "")
+	af := afero.Afero{
+		Fs: afero.NewMemMapFs(),
+	}
 
 	suite.NoError(prov.Download(context.Background(), af))
 }
@@ -263,5 +263,10 @@ func TestDBIP(t *testing.T) {
 }
 
 func TestIntegrationDBIP(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipped because of the short mode")
+		return
+	}
+
 	suite.Run(t, &IntegrationDBIPTestSuite{})
 }
