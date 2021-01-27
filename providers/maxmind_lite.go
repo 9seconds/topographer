@@ -88,7 +88,7 @@ func (m *maxmindLiteProvider) downloadChecksum(ctx context.Context) (string, err
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
+        io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 		resp.Body.Close()
 	}()
 
@@ -126,7 +126,7 @@ func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir strin
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
+        io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 		resp.Body.Close()
 	}()
 

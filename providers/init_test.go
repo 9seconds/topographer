@@ -28,7 +28,7 @@ func (suite *TmpDirTestSuite) SetupTest() {
 }
 
 func (suite *TmpDirTestSuite) TearDownTest() {
-	os.Chmod(suite.tmpDir, 0777)
+	os.Chmod(suite.tmpDir, 0777) // nolint: errcheck
 	os.RemoveAll(suite.tmpDir)
 }
 

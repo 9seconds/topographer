@@ -31,7 +31,7 @@ func (suite *MaxMindDBBaseTestSuite) SetupTest() {
 
 func (suite *MaxMindDBBaseTestSuite) TearDownTest() {
 	suite.m.Shutdown()
-	os.Chmod(suite.tmpDir, 0777)
+	os.Chmod(suite.tmpDir, 0777) // nolint: errcheck
 	os.RemoveAll(suite.tmpDir)
 }
 
@@ -77,7 +77,7 @@ func (suite *MaxMindDBBaseTestSuite) TestLookupBadIP() {
 	path := filepath.Join(suite.GetTestdataPath(),
 		"maxmind", "ok", "target_xxx")
 
-	suite.m.Open(path)
+	suite.m.Open(path) // nolint: errcheck
 
 	_, err := suite.m.Lookup(context.Background(), nil)
 
@@ -88,7 +88,7 @@ func (suite *MaxMindDBBaseTestSuite) TestLookupOk() {
 	path := filepath.Join(suite.GetTestdataPath(),
 		"maxmind", "ok", "target_xxx")
 
-	suite.m.Open(path)
+	suite.m.Open(path) // nolint: errcheck
 
 	result, err := suite.m.Lookup(context.Background(), net.ParseIP("81.2.69.142"))
 
