@@ -46,6 +46,8 @@ jobs:
 
       - name: Run tests
         run: go test -coverprofile=./coverage.txt -covermode=atomic -v ./...
+        env:
+          MAXMIND_API_KEY: ${{ secrets.MAXMIND_API_KEY }}
 
       - name: Collect coverage
         uses: codecov/codecov-action@v1
