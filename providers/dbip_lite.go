@@ -11,13 +11,14 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/9seconds/topographer/topolib"
 	"github.com/antchfx/htmlquery"
-	"github.com/spf13/afero"
 )
 
 var (
@@ -48,13 +49,13 @@ func (d *dbipLiteProvider) BaseDirectory() string {
 	return d.baseDirectory
 }
 
-func (d *dbipLiteProvider) Download(ctx context.Context, fs afero.Afero) error {
+func (d *dbipLiteProvider) Download(ctx context.Context, rootDir string) error {
 	url, sha1sum, err := d.getFileData(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot parse html page: %w", err)
 	}
 
-	if err := d.downloadFile(ctx, fs, url, sha1sum); err != nil {
+	if err := d.downloadFile(ctx, rootDir, url, sha1sum); err != nil {
 		return fmt.Errorf("cannot download a file: %w", err)
 	}
 
@@ -106,7 +107,7 @@ func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, err
 	return "", "", dbipLiteErrNothingOnPage
 }
 
-func (d *dbipLiteProvider) downloadFile(ctx context.Context, fs afero.Afero, url, sha1sum string) error {
+func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url, sha1sum string) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Errorf("cannot compose a request: %w", err)
@@ -127,7 +128,7 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, fs afero.Afero, url
 		return fmt.Errorf("cannot create a gzip reader: %w", err)
 	}
 
-	db, err := fs.Create(maxmindBaseFileName)
+	db, err := os.Create(filepath.Join(rootDir, maxmindBaseFileName))
 	if err != nil {
 		return fmt.Errorf("cannot open a target file: %w", err)
 	}
@@ -151,6 +152,6 @@ func NewDBIPLite(httpClient topolib.HTTPClient, updateEvery time.Duration, baseD
 	return &dbipLiteProvider{
 		httpClient:    httpClient,
 		updateEvery:   updateEvery,
-		baseDirectory: baseDirectory,
+		baseDirectory: filepath.Clean(baseDirectory),
 	}
 }

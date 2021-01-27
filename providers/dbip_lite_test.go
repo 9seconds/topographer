@@ -5,34 +5,36 @@ import (
 	"compress/gzip"
 	"context"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/9seconds/topographer/providers"
 	"github.com/jarcoal/httpmock"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/suite"
 )
 
 type MockedDBIPTestSuite struct {
+	TmpDirTestSuite
 	OfflineProviderTestSuite
 	HTTPMockMixin
 }
 
 func (suite *MockedDBIPTestSuite) BaseDirectory() string {
-	path, err := filepath.Abs(filepath.Join("testdata", "maxmind"))
-	if err != nil {
-		panic(err)
-	}
-
-	return path
+	return filepath.Join(suite.GetTestdataPath(), "maxmind")
 }
 
 func (suite *MockedDBIPTestSuite) SetupTest() {
+	suite.TmpDirTestSuite.SetupTest()
 	suite.OfflineProviderTestSuite.SetupTest()
 
 	suite.prov = providers.NewDBIPLite(suite.http, time.Minute, suite.BaseDirectory())
+}
+
+func (suite *MockedDBIPTestSuite) TearDownTest() {
+	suite.OfflineProviderTestSuite.TearDownTest()
+	suite.TmpDirTestSuite.TearDownTest()
 }
 
 func (suite *MockedDBIPTestSuite) TestName() {
@@ -48,38 +50,34 @@ func (suite *MockedDBIPTestSuite) TestBaseDirectory() {
 }
 
 func (suite *MockedDBIPTestSuite) TestDownloadCancelledContext() {
-	fs := afero.NewMemMapFs()
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cancel()
 
-	suite.Error(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
+	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
 }
 
 func (suite *MockedDBIPTestSuite) TestDownloadSeedPageBadStatus() {
-	fs := afero.NewMemMapFs()
 	ctx := context.Background()
 
 	httpmock.RegisterResponder("GET",
 		"https://db-ip.com/db/download/ip-to-city-lite",
 		httpmock.NewStringResponder(http.StatusInternalServerError, ""))
 
-	suite.Error(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
+	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
 }
 
 func (suite *MockedDBIPTestSuite) TestDownloadSeedPageBadHTML() {
-	fs := afero.NewMemMapFs()
 	ctx := context.Background()
 
 	httpmock.RegisterResponder("GET",
 		"https://db-ip.com/db/download/ip-to-city-lite",
 		httpmock.NewStringResponder(http.StatusOK, "<"))
 
-	suite.Error(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
+	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
 }
 
 func (suite *MockedDBIPTestSuite) TestDownloadSeedPageNoLink() {
-	fs := afero.NewMemMapFs()
 	ctx := context.Background()
 
 	httpmock.RegisterResponder("GET",
@@ -94,11 +92,10 @@ func (suite *MockedDBIPTestSuite) TestDownloadSeedPageNoLink() {
 </body></html>
         `))
 
-	suite.Error(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
+	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
 }
 
 func (suite *MockedDBIPTestSuite) TestDownloadSeedPageNoChecksum() {
-	fs := afero.NewMemMapFs()
 	ctx := context.Background()
 
 	httpmock.RegisterResponder("GET",
@@ -117,11 +114,10 @@ func (suite *MockedDBIPTestSuite) TestDownloadSeedPageNoChecksum() {
 </body></html>
         `))
 
-	suite.Error(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
+	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
 }
 
 func (suite *MockedDBIPTestSuite) TestCannotDownloadFile() {
-	fs := afero.NewMemMapFs()
 	ctx := context.Background()
 
 	httpmock.RegisterResponder("GET",
@@ -143,11 +139,14 @@ func (suite *MockedDBIPTestSuite) TestCannotDownloadFile() {
 		"https://download.db-ip.com/free/file.mmdb.gz",
 		httpmock.NewStringResponder(http.StatusNotFound, ""))
 
-	suite.Error(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
+	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
 }
 
 func (suite *MockedDBIPTestSuite) TestDownloadCannotSaveFile() {
-	fs := afero.NewReadOnlyFs(afero.NewMemMapFs())
+	if err := os.Chmod(suite.tmpDir, 0400); err != nil {
+		panic(err)
+	}
+
 	ctx := context.Background()
 
 	httpmock.RegisterResponder("GET",
@@ -176,11 +175,10 @@ func (suite *MockedDBIPTestSuite) TestDownloadCannotSaveFile() {
 		"https://download.db-ip.com/free/file.mmdb.gz",
 		httpmock.NewBytesResponder(http.StatusOK, fileBuffer.Bytes()))
 
-	suite.Error(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
+	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
 }
 
 func (suite *MockedDBIPTestSuite) TestDownloadIncorrectChecksum() {
-	fs := afero.NewMemMapFs()
 	ctx := context.Background()
 
 	httpmock.RegisterResponder("GET",
@@ -209,11 +207,10 @@ func (suite *MockedDBIPTestSuite) TestDownloadIncorrectChecksum() {
 		"https://download.db-ip.com/free/file.mmdb.gz",
 		httpmock.NewBytesResponder(http.StatusOK, fileBuffer.Bytes()))
 
-	suite.Error(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
+	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
 }
 
 func (suite *MockedDBIPTestSuite) TestDownloadOk() {
-	fs := afero.NewMemMapFs()
 	ctx := context.Background()
 
 	httpmock.RegisterResponder("GET",
@@ -242,20 +239,28 @@ func (suite *MockedDBIPTestSuite) TestDownloadOk() {
 		"https://download.db-ip.com/free/file.mmdb.gz",
 		httpmock.NewBytesResponder(http.StatusOK, fileBuffer.Bytes()))
 
-	suite.NoError(suite.prov.Download(ctx, afero.Afero{Fs: fs}))
+	suite.NoError(suite.prov.Download(ctx, suite.tmpDir))
 }
 
 type IntegrationDBIPTestSuite struct {
+	TmpDirTestSuite
 	OfflineProviderTestSuite
+}
+
+func (suite *IntegrationDBIPTestSuite) SetupTest() {
+	suite.TmpDirTestSuite.SetupTest()
+	suite.OfflineProviderTestSuite.SetupTest()
+}
+
+func (suite *IntegrationDBIPTestSuite) TearDownTest() {
+	suite.OfflineProviderTestSuite.TearDownTest()
+	suite.TmpDirTestSuite.TearDownTest()
 }
 
 func (suite *IntegrationDBIPTestSuite) TestDownload() {
 	prov := providers.NewDBIPLite(suite.http, time.Minute, "")
-	af := afero.Afero{
-		Fs: afero.NewMemMapFs(),
-	}
 
-	suite.NoError(prov.Download(context.Background(), af))
+	suite.NoError(prov.Download(context.Background(), suite.tmpDir))
 }
 
 func TestDBIP(t *testing.T) {

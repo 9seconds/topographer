@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/9seconds/topographer/topolib"
 	"github.com/oschwald/maxminddb-golang"
-	"github.com/spf13/afero"
 )
 
 const maxmindBaseFileName = "database.mmdb"
@@ -40,16 +40,11 @@ func (m *maxmindBase) Shutdown() {
 	}
 }
 
-func (m *maxmindBase) Open(fs *afero.BasePathFs) error {
+func (m *maxmindBase) Open(path string) error {
 	m.dbReaderLock.Lock()
 	defer m.dbReaderLock.Unlock()
 
-	filepath, err := fs.RealPath(maxmindBaseFileName)
-	if err != nil {
-		return fmt.Errorf("cannot resolve a file name of the database: %w", err)
-	}
-
-	reader, err := maxminddb.Open(filepath)
+	reader, err := maxminddb.Open(filepath.Join(path, maxmindBaseFileName))
 	if err != nil {
 		return fmt.Errorf("cannot initialize a reader of maxminddb: %w", err)
 	}

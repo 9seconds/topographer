@@ -12,13 +12,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/9seconds/topographer/topolib"
-	"github.com/spf13/afero"
 )
 
 var (
@@ -52,13 +52,13 @@ func (m *maxmindLiteProvider) BaseDirectory() string {
 	return m.baseDirectory
 }
 
-func (m *maxmindLiteProvider) Download(ctx context.Context, fs afero.Afero) error {
+func (m *maxmindLiteProvider) Download(ctx context.Context, rootDir string) error {
 	expectedChecksum, err := m.downloadChecksum(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot download a checksum: %w", err)
 	}
 
-	actualChecksum, err := m.downloadArchive(ctx, fs)
+	actualChecksum, err := m.downloadArchive(ctx, rootDir)
 	if err != nil {
 		return fmt.Errorf("cannot download an archive")
 	}
@@ -69,7 +69,7 @@ func (m *maxmindLiteProvider) Download(ctx context.Context, fs afero.Afero) erro
 			actualChecksum)
 	}
 
-	if err := m.extractArchive(fs); err != nil {
+	if err := m.extractArchive(rootDir); err != nil {
 		return fmt.Errorf("cannot extract archive: %w", err)
 	}
 
@@ -109,8 +109,8 @@ func (m *maxmindLiteProvider) downloadChecksum(ctx context.Context) (string, err
 	return string(data[:pos]), nil
 }
 
-func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, fs afero.Afero) (string, error) {
-	tarFile, err := fs.Create(maxmindLiteArchiveName)
+func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir string) (string, error) {
+	tarFile, err := os.Create(filepath.Join(rootDir, maxmindLiteArchiveName))
 	if err != nil {
 		return "", fmt.Errorf("cannot create an archive file: %w", err)
 	}
@@ -157,13 +157,13 @@ func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, fs afero.Afer
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func (m *maxmindLiteProvider) extractArchive(fs afero.Afero) error {
-	archiveFile, err := fs.Open(maxmindLiteArchiveName)
+func (m *maxmindLiteProvider) extractArchive(rootDir string) error {
+	archiveFile, err := os.Open(filepath.Join(rootDir, maxmindLiteArchiveName))
 	if err != nil {
 		return fmt.Errorf("cannot open archive: %w", err)
 	}
 
-	databaseFile, err := fs.Create(maxmindBaseFileName)
+	databaseFile, err := os.Create(filepath.Join(rootDir, maxmindBaseFileName))
 	if err != nil {
 		return fmt.Errorf("cannot create a file for a database: %w", err)
 	}
@@ -194,7 +194,7 @@ func (m *maxmindLiteProvider) extractArchive(fs afero.Afero) error {
 		return fmt.Errorf("cannot copy into a database file: %w", err)
 	}
 
-    fs.Remove(maxmindLiteArchiveName)
+	os.Remove(filepath.Join(rootDir, maxmindLiteArchiveName))
 
 	return nil
 }
@@ -223,7 +223,7 @@ func NewMaxmindLite(httpClient topolib.HTTPClient,
 	return &maxmindLiteProvider{
 		httpClient:    httpClient,
 		updateEvery:   updateEvery,
-		baseDirectory: baseDirectory,
+		baseDirectory: filepath.Clean(baseDirectory),
 		licenseKey:    parameters["license_key"],
 	}
 }

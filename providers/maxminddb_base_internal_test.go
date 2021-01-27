@@ -3,78 +3,98 @@ package providers
 import (
 	"context"
 	"errors"
+	"io/ioutil"
 	"net"
+	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/suite"
 )
 
 type MaxMindDBBaseTestSuite struct {
 	suite.Suite
 
-	m *maxmindBase
+	m      *maxmindBase
+	tmpDir string
 }
 
 func (suite *MaxMindDBBaseTestSuite) SetupTest() {
+	dir, err := ioutil.TempDir("", "test_")
+	if err != nil {
+		panic(err)
+	}
+
+	suite.tmpDir = dir
 	suite.m = &maxmindBase{}
 }
 
 func (suite *MaxMindDBBaseTestSuite) TearDownTest() {
-    suite.m.Shutdown()
+	suite.m.Shutdown()
+	os.Chmod(suite.tmpDir, 0777)
+	os.RemoveAll(suite.tmpDir)
+}
+
+func (suite *MaxMindDBBaseTestSuite) GetTestdataPath() string {
+	absPath, err := filepath.Abs("testdata")
+	if err != nil {
+		panic(err)
+	}
+
+	return absPath
 }
 
 func (suite *MaxMindDBBaseTestSuite) TestOpenErrorNoFile() {
-	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()),
-		filepath.Join("testdata", "maxmind", "error"))
+	if err := os.Chmod(suite.tmpDir, 0400); err != nil {
+		panic(err)
+	}
 
-	suite.Error(suite.m.Open(fs.(*afero.BasePathFs)))
+	suite.Error(suite.m.Open(suite.tmpDir))
 }
 
 func (suite *MaxMindDBBaseTestSuite) TestOpenErrorBadFile() {
-	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()),
-		filepath.Join("testdata", "maxmind", "error", "target_xxx"))
+	path := filepath.Join(suite.GetTestdataPath(),
+		"maxmind", "error", "target_xxx")
 
-	suite.Error(suite.m.Open(fs.(*afero.BasePathFs)))
+	suite.Error(suite.m.Open(path))
 }
 
 func (suite *MaxMindDBBaseTestSuite) TestOpenOk() {
-	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()),
-		filepath.Join("testdata", "maxmind", "ok", "target_xxx"))
+	path := filepath.Join(suite.GetTestdataPath(),
+		"maxmind", "ok", "target_xxx")
 
-	suite.NoError(suite.m.Open(fs.(*afero.BasePathFs)))
-    suite.NotNil(suite.m.dbReader)
+	suite.NoError(suite.m.Open(path))
+	suite.NotNil(suite.m.dbReader)
 }
 
 func (suite *MaxMindDBBaseTestSuite) TestLookupNotReady() {
-    _, err := suite.m.Lookup(context.Background(), net.ParseIP("81.2.69.142"))
+	_, err := suite.m.Lookup(context.Background(), net.ParseIP("81.2.69.142"))
 
-    suite.True(errors.Is(err, ErrDatabaseIsNotReadyYet))
+	suite.True(errors.Is(err, ErrDatabaseIsNotReadyYet))
 }
 
 func (suite *MaxMindDBBaseTestSuite) TestLookupBadIP() {
-	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()),
-		filepath.Join("testdata", "maxmind", "ok", "target_xxx"))
+	path := filepath.Join(suite.GetTestdataPath(),
+		"maxmind", "ok", "target_xxx")
 
-	suite.m.Open(fs.(*afero.BasePathFs))
+	suite.m.Open(path)
 
-    _, err := suite.m.Lookup(context.Background(), nil)
+	_, err := suite.m.Lookup(context.Background(), nil)
 
-    suite.Error(err)
+	suite.Error(err)
 }
 
 func (suite *MaxMindDBBaseTestSuite) TestLookupOk() {
-	fs := afero.NewBasePathFs(afero.NewReadOnlyFs(afero.NewOsFs()),
-		filepath.Join("testdata", "maxmind", "ok", "target_xxx"))
+	path := filepath.Join(suite.GetTestdataPath(),
+		"maxmind", "ok", "target_xxx")
 
-	suite.m.Open(fs.(*afero.BasePathFs))
+	suite.m.Open(path)
 
-    result, err := suite.m.Lookup(context.Background(), net.ParseIP("81.2.69.142"))
+	result, err := suite.m.Lookup(context.Background(), net.ParseIP("81.2.69.142"))
 
-    suite.NoError(err)
-    suite.Equal("GB", result.CountryCode)
-    suite.Equal("London", result.City)
+	suite.NoError(err)
+	suite.Equal("GB", result.CountryCode)
+	suite.Equal("London", result.City)
 }
 
 func TestMaxMindDBBase(t *testing.T) {
