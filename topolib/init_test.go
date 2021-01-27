@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/9seconds/topographer/topolib"
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -40,12 +39,12 @@ func (m *OfflineProviderMock) BaseDirectory() string {
 	return m.Called().String(0)
 }
 
-func (m *OfflineProviderMock) Open(fs afero.Fs) error {
-	return m.Called(fs).Error(0)
+func (m *OfflineProviderMock) Open(path string) error {
+	return m.Called(path).Error(0)
 }
 
-func (m *OfflineProviderMock) Download(ctx context.Context, fs afero.Afero) error {
-	return m.Called(ctx, fs).Error(0)
+func (m *OfflineProviderMock) Download(ctx context.Context, path string) error {
+	return m.Called(ctx, path).Error(0)
 }
 
 type LoggerMock struct {

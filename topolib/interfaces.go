@@ -5,8 +5,6 @@ import (
 	"net"
 	"net/http"
 	"time"
-
-	"github.com/spf13/afero"
 )
 
 type Provider interface {
@@ -20,8 +18,8 @@ type OfflineProvider interface {
 	Shutdown()
 	UpdateEvery() time.Duration
 	BaseDirectory() string
-	Open(*afero.BasePathFs) error
-	Download(context.Context, afero.Afero) error
+	Open(string) error
+	Download(context.Context, string) error
 }
 
 type Logger interface {

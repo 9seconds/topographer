@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -91,19 +90,7 @@ func (suite *FsUpdaterTestSuite) TestInitialCleaning() {
 
 	errToCheck := errors.New("new error")
 
-	suite.providerMock.On("Open", mock.Anything).Return(errToCheck).Run(func(args mock.Arguments) {
-		fp, err := args.Get(0).(afero.Fs).Create("myfile")
-
-		suite.NoError(err)
-
-        fp.WriteString("hello") // nolint: errcheck
-
-		content, err := ioutil.ReadFile(filepath.Join(targetDir, "myfile"))
-
-		suite.NoError(err)
-
-		suite.Equal("hello", string(content))
-	})
+	suite.providerMock.On("Open", targetDir).Return(errToCheck)
 
 	err = suite.u.Start()
 
@@ -124,21 +111,16 @@ func (suite *FsUpdaterTestSuite) TestOk() {
 	defer os.RemoveAll(targetDir)
 
 	suite.providerMock.On("Download", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
-		fs := args.Get(1).(afero.Fs)
+		tmpDir := args.String(1)
 
-		fp, err := fs.Create("filename")
-
-		suite.NoError(err)
-
-        fp.WriteString("Hello") // nolint: errcheck
-
-		suite.NoError(fs.MkdirAll(filepath.Join("path", "to"), 0777))
-
-		fp, err = fs.Create(filepath.Join("path", "to", "file"))
-
-		suite.NoError(err)
-
-        fp.WriteString("OK") // nolint: errcheck
+		suite.NoError(
+			ioutil.WriteFile(filepath.Join(tmpDir, "filename"),
+				[]byte("Hello"),
+				0644))
+		suite.NoError(os.MkdirAll(filepath.Join(tmpDir, "path", "to"), 0777))
+		suite.NoError(ioutil.WriteFile(filepath.Join(tmpDir, "path", "to", "file"),
+			[]byte("OK"),
+			0644))
 	})
 	suite.providerMock.On("Open", mock.Anything).Return(nil)
 

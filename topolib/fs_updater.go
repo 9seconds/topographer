@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/spf13/afero"
 )
 
 const (
@@ -48,7 +48,7 @@ func (f *fsUpdater) Start() error {
 
 	switch {
 	case err == nil:
-		if err := f.provider.Open(f.getTargetFs(targetDir)); err != nil {
+		if err := f.provider.Open(targetDir); err != nil {
 			return fmt.Errorf("cannot open a directory %s: %w", targetDir, err)
 		}
 	case !errors.Is(err, errNoTargetDir):
@@ -66,9 +66,9 @@ func (f *fsUpdater) Shutdown() {
 }
 
 func (f *fsUpdater) doInitialCleaning() error {
-	baseFs := f.getBaseFs()
+	rootDir := f.provider.BaseDirectory()
 
-	infos, err := baseFs.ReadDir(".")
+	infos, err := ioutil.ReadDir(rootDir)
 	if err != nil {
 		return fmt.Errorf("cannot read a base directory: %w", err)
 	}
@@ -77,10 +77,12 @@ func (f *fsUpdater) doInitialCleaning() error {
 	toDelete := []string{}
 
 	for _, v := range infos {
+		fullPath := filepath.Join(rootDir, v.Name())
+
 		if v.IsDir() && strings.HasPrefix(v.Name(), FsTargetDirPrefix) {
-			targetDirs = append(targetDirs, v.Name())
+			targetDirs = append(targetDirs, fullPath)
 		} else {
-			toDelete = append(toDelete, v.Name())
+			toDelete = append(toDelete, fullPath)
 		}
 	}
 
@@ -91,7 +93,7 @@ func (f *fsUpdater) doInitialCleaning() error {
 	}
 
 	for _, v := range toDelete {
-		if err := baseFs.RemoveAll(v); err != nil {
+		if err := os.RemoveAll(v); err != nil {
 			return fmt.Errorf("cannot delete %s: %w", v, err)
 		}
 	}
@@ -103,9 +105,7 @@ func (f *fsUpdater) bgUpdate() {
 	timer := time.NewTicker(f.provider.UpdateEvery())
 	defer timer.Stop()
 
-	baseFs := f.getBaseFs()
-
-	if err := f.doUpdate(baseFs); err != nil {
+	if err := f.doUpdate(); err != nil {
 		f.logger.UpdateError(f.Name(), err)
 	} else {
 		f.logger.UpdateInfo(f.Name(), "db has been updated")
@@ -116,7 +116,7 @@ func (f *fsUpdater) bgUpdate() {
 		case <-f.ctx.Done():
 			return
 		case <-timer.C:
-			if err := f.doUpdate(baseFs); err != nil {
+			if err := f.doUpdate(); err != nil {
 				f.logger.UpdateError(f.Name(), err)
 			} else {
 				f.logger.UpdateInfo(f.Name(), "db has been updated")
@@ -125,28 +125,26 @@ func (f *fsUpdater) bgUpdate() {
 	}
 }
 
-func (f *fsUpdater) doUpdate(fs afero.Afero) error {
+func (f *fsUpdater) doUpdate() error {
 	currentTargetDir, err := f.getTargetDir()
 	if err != nil && !errors.Is(err, errNoTargetDir) {
 		return fmt.Errorf("cannot detect current target dir: %w", err)
 	}
 
-	tmpDir, err := fs.TempDir(".", FsTempDirPrefix)
+	rootDir := f.provider.BaseDirectory()
+
+	tmpDir, err := ioutil.TempDir(rootDir, "")
 	if err != nil {
 		return fmt.Errorf("cannot create a temporary directory: %w", err)
 	}
 
-	defer fs.RemoveAll(tmpDir) // nolint: errcheck
+	defer os.RemoveAll(tmpDir) // nolint: errcheck
 
-	tmpFs := afero.Afero{
-		Fs: afero.NewBasePathFs(fs, tmpDir),
-	}
-
-	if err := f.provider.Download(f.ctx, tmpFs); err != nil {
+	if err := f.provider.Download(f.ctx, tmpDir); err != nil {
 		return fmt.Errorf("cannot download to tmp directory: %w", err)
 	}
 
-	targetDirName, err := f.getTargetDirName(tmpFs.Fs)
+	targetDirName, err := f.getTargetDirName(tmpDir)
 	if err != nil {
 		return fmt.Errorf("cannot get a target dir name: %w", err)
 	}
@@ -156,16 +154,16 @@ func (f *fsUpdater) doUpdate(fs afero.Afero) error {
 	}
 
 	if currentTargetDir != "" {
-		if err := fs.RemoveAll(currentTargetDir); err != nil {
+		if err := os.RemoveAll(currentTargetDir); err != nil {
 			return fmt.Errorf("cannot remove current target dir: %w", err)
 		}
 	}
 
-	if err := fs.Rename(tmpDir, targetDirName); err != nil {
+	if err := os.Rename(tmpDir, targetDirName); err != nil {
 		return fmt.Errorf("cannot rename tmp dir to target one: %w", err)
 	}
 
-	if err := f.provider.Open(f.getTargetFs(targetDirName)); err != nil {
+	if err := f.provider.Open(targetDirName); err != nil {
 		return fmt.Errorf("cannot open a target dir: %w", err)
 	}
 
@@ -173,38 +171,28 @@ func (f *fsUpdater) doUpdate(fs afero.Afero) error {
 }
 
 func (f *fsUpdater) getTargetDir() (string, error) {
-	baseFs := f.getBaseFs()
+	rootDir := f.provider.BaseDirectory()
 
-	infos, err := baseFs.ReadDir(".")
+	infos, err := ioutil.ReadDir(rootDir)
 	if err != nil {
 		return "", fmt.Errorf("cannot read base directory: %w", err)
 	}
 
 	for _, v := range infos {
 		if v.IsDir() && strings.HasPrefix(v.Name(), FsTargetDirPrefix) {
-			return v.Name(), nil
+			return filepath.Join(rootDir, v.Name()), nil
 		}
 	}
 
 	return "", errNoTargetDir
 }
 
-func (f *fsUpdater) getBaseFs() afero.Afero {
-	return afero.Afero{
-		Fs: afero.NewBasePathFs(afero.NewOsFs(), f.provider.BaseDirectory()),
-	}
-}
-
-func (f *fsUpdater) getTargetFs(name string) *afero.BasePathFs {
-	return afero.NewBasePathFs(f.getBaseFs().Fs, name).(*afero.BasePathFs)
-}
-
-func (f *fsUpdater) getTargetDirName(fs afero.Fs) (string, error) {
+func (f *fsUpdater) getTargetDirName(rootDir string) (string, error) {
 	hasher := sha256.New()
 	startSign := []byte{0}
 	fileSign := []byte{1}
 
-	err := afero.Walk(fs, ".", func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		switch {
 		case err != nil:
 			return err
@@ -212,10 +200,18 @@ func (f *fsUpdater) getTargetDirName(fs afero.Fs) (string, error) {
 			return nil
 		}
 
-		hasher.Write(startSign)      // nolint: errcheck
-		io.WriteString(hasher, path) // nolint: errcheck
+		relPath, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return fmt.Errorf("cannot build a relative path of %s to %s: %w",
+				path,
+				rootDir,
+				err)
+		}
 
-		fp, err := fs.Open(path)
+		hasher.Write(startSign)         // nolint: errcheck
+		io.WriteString(hasher, relPath) // nolint: errcheck
+
+		fp, err := os.Open(path)
 		if err != nil {
 			return fmt.Errorf("cannot open a file %s: %w", path, err)
 		}
@@ -232,5 +228,7 @@ func (f *fsUpdater) getTargetDirName(fs afero.Fs) (string, error) {
 		return "", fmt.Errorf("cannot calculate a checksum: %w", err)
 	}
 
-	return FsTargetDirPrefix + hex.EncodeToString(hasher.Sum(nil)), nil
+	baseName := FsTargetDirPrefix + hex.EncodeToString(hasher.Sum(nil))
+
+	return filepath.Join(f.provider.BaseDirectory(), baseName), nil
 }
