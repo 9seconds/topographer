@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/afero"
 )
 
+const maxmindBaseFileName = "database.mmdb"
+
 type maxmindLookupResult struct {
 	City struct {
 		Names struct {
@@ -42,7 +44,7 @@ func (m *maxmindBase) Open(fs *afero.BasePathFs) error {
 	m.dbReaderLock.Lock()
 	defer m.dbReaderLock.Unlock()
 
-	filepath, err := fs.RealPath(dbipLiteFileName)
+	filepath, err := fs.RealPath(maxmindBaseFileName)
 	if err != nil {
 		return fmt.Errorf("cannot resolve a file name of the database: %w", err)
 	}

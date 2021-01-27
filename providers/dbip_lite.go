@@ -11,7 +11,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -24,14 +23,10 @@ import (
 var (
 	dbipLiteErrNothingOnPage   = errors.New("could not find anything on a page")
 	dbipLiteUrlRegexp          = regexp.MustCompile(`https?:\/\/download\.db-ip\.com\/free\/.*?\.mmdb\.gz`)
-	dbipLiteSha1ChecksumRegexp = regexp.MustCompile(`[0-9a-fA-F]{40}`)
+	dbipLiteSha1ChecksumRegexp = regexp.MustCompile(`(?i)[0-9a-f]{40}`)
 )
 
-const (
-	NameDBIPLite = "dbip_lite"
-
-	dbipLiteFileName = "database.mmdb"
-)
+const NameDBIPLite = "dbip_lite"
 
 type dbipLiteProvider struct {
 	maxmindBase
@@ -132,7 +127,7 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, fs afero.Afero, url
 		return fmt.Errorf("cannot create a gzip reader: %w", err)
 	}
 
-	db, err := fs.OpenFile(dbipLiteFileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	db, err := fs.Create(maxmindBaseFileName)
 	if err != nil {
 		return fmt.Errorf("cannot open a target file: %w", err)
 	}
