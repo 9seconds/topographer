@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -257,10 +258,15 @@ func (suite *IntegrationDBIPTestSuite) TearDownTest() {
 	suite.TmpDirTestSuite.TearDownTest()
 }
 
-func (suite *IntegrationDBIPTestSuite) TestDownload() {
+func (suite *IntegrationDBIPTestSuite) TestFull() {
 	prov := providers.NewDBIPLite(suite.http, time.Minute, "")
 
 	suite.NoError(prov.Download(context.Background(), suite.tmpDir))
+	suite.NoError(prov.Open(suite.tmpDir))
+
+	_, err := prov.Lookup(context.Background(), net.ParseIP("80.80.80.80"))
+
+	suite.NoError(err)
 }
 
 func TestDBIP(t *testing.T) {

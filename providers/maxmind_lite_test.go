@@ -1,44 +1,66 @@
 package providers_test
 
-// const envApiKey = "MAXMIND_API_KEY"
+import (
+	"context"
+	"net"
+	"os"
+	"testing"
+	"time"
 
-// type MaxmindLiteTestSuite struct {
-// 	OfflineProviderTestSuite
-// 	HTTPMockMixin
-// }
+	"github.com/9seconds/topographer/providers"
+	"github.com/stretchr/testify/suite"
+)
 
-// type IntegrationMaxmindLiteTestSuite struct {
-// 	OfflineProviderTestSuite
-// }
+const envApiKey = "MAXMIND_API_KEY"
 
-// func (suite *IntegrationMaxmindLiteTestSuite) TestFull() {
-// 	prov := providers.NewMaxmindLite(suite.http, time.Minute, "", map[string]string{
-// 		"license_key": os.Getenv(envApiKey),
-// 	})
-//     fs := afero.NewBasePathFs(afero.NewMemMapFs(), "/").(*afero.BasePathFs)
+type MaxmindLiteTestSuite struct {
+	TmpDirTestSuite
+	OfflineProviderTestSuite
+	HTTPMockMixin
+}
 
-//     suite.NoError(prov.Download(context.Background(), afero.Afero{Fs: fs}))
-// 	suite.NoError(prov.Open(fs))
+type IntegrationMaxmindLiteTestSuite struct {
+	TmpDirTestSuite
+	OfflineProviderTestSuite
+}
 
-// 	_, err := prov.Lookup(context.Background(), net.ParseIP("80.80.80.80"))
+func (suite *IntegrationMaxmindLiteTestSuite) SetupTest() {
+	suite.TmpDirTestSuite.SetupTest()
+	suite.OfflineProviderTestSuite.SetupTest()
+}
 
-// 	suite.NoError(err)
-// }
+func (suite *IntegrationMaxmindLiteTestSuite) TearDownTest() {
+	suite.OfflineProviderTestSuite.TearDownTest()
+	suite.TmpDirTestSuite.TearDownTest()
+}
 
-// func TestMaxmindLite(t *testing.T) {
-// 	suite.Run(t, &MaxmindLiteTestSuite{})
-// }
+func (suite *IntegrationMaxmindLiteTestSuite) TestFull() {
+	prov := providers.NewMaxmindLite(suite.http, time.Minute, "", map[string]string{
+		"license_key": os.Getenv(envApiKey),
+	})
 
-// func TestIntegrationMaxmindLite(t *testing.T) {
-// 	if testing.Short() {
-// 		t.Skip("Skipped because of the short mode")
-// 		return
-// 	}
+	suite.NoError(prov.Download(context.Background(), suite.tmpDir))
+	suite.NoError(prov.Open(suite.tmpDir))
 
-// 	if os.Getenv(envApiKey) == "" {
-// 		t.Skip("Skipped because " + envApiKey + " environment variable is empty")
-// 		return
-// 	}
+	_, err := prov.Lookup(context.Background(), net.ParseIP("80.80.80.80"))
 
-// 	suite.Run(t, &IntegrationMaxmindLiteTestSuite{})
-// }
+	suite.NoError(err)
+}
+
+func TestMaxmindLite(t *testing.T) {
+	suite.Run(t, &MaxmindLiteTestSuite{})
+}
+
+func TestIntegrationMaxmindLite(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipped because of the short mode")
+		return
+	}
+
+	if os.Getenv(envApiKey) == "" {
+		t.Skip("Skipped because " + envApiKey + " environment variable is empty")
+		return
+	}
+
+	suite.Run(t, &IntegrationMaxmindLiteTestSuite{})
+}
