@@ -39,7 +39,7 @@ func (suite *MaxmindLiteTestSuite) SetupTest() {
 	suite.prov = providers.NewMaxmindLite(suite.http, time.Minute, suite.tmpDir, "apikey")
 }
 
-func (suite *MaxmindLiteTestSuite) TearDownSuite() {
+func (suite *MaxmindLiteTestSuite) TearDownTest() {
 	suite.HTTPMockMixin.TearDownTest()
 	suite.OfflineProviderTestSuite.TearDownTest()
 	suite.TmpDirTestSuite.TearDownTest()
