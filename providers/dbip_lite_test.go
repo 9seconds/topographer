@@ -34,6 +34,7 @@ func (suite *MockedDBIPTestSuite) SetupTest() {
 }
 
 func (suite *MockedDBIPTestSuite) TearDownTest() {
+    suite.HTTPMockMixin.TearDownTest()
 	suite.OfflineProviderTestSuite.TearDownTest()
 	suite.TmpDirTestSuite.TearDownTest()
 }
