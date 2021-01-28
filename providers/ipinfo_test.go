@@ -20,9 +20,7 @@ type MockedIPInfoTestSuite struct {
 func (suite *MockedIPInfoTestSuite) SetupTest() {
 	suite.OnlineProviderTestSuite.SetupTest()
 
-	suite.prov = providers.NewIPInfo(suite.http, map[string]string{
-		"auth_token": "token",
-	})
+	suite.prov = providers.NewIPInfo(suite.http, "token")
 }
 
 func (suite *MockedIPInfoTestSuite) TestName() {
@@ -91,7 +89,7 @@ type IntegrationIPInfoTestSuite struct {
 func (suite *IntegrationIPInfoTestSuite) SetupTest() {
 	suite.OnlineProviderTestSuite.SetupTest()
 
-	suite.prov = providers.NewIPInfo(suite.http, map[string]string{})
+	suite.prov = providers.NewIPInfo(suite.http, "")
 }
 
 func (suite *IntegrationIPInfoTestSuite) TestLookup() {

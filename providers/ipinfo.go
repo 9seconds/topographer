@@ -70,9 +70,9 @@ func (i ipinfoProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provider
 	return result, nil
 }
 
-func NewIPInfo(client topolib.HTTPClient, parameters map[string]string) topolib.Provider {
+func NewIPInfo(client topolib.HTTPClient, authToken string) topolib.Provider {
 	return ipinfoProvider{
-		authToken: parameters["auth_token"],
+		authToken: authToken,
 		client:    client,
 	}
 }
