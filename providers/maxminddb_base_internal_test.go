@@ -12,14 +12,14 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type MaxMindDBBaseTestSuite struct {
+type MaxmindDBBaseTestSuite struct {
 	suite.Suite
 
 	m      *maxmindBase
 	tmpDir string
 }
 
-func (suite *MaxMindDBBaseTestSuite) SetupTest() {
+func (suite *MaxmindDBBaseTestSuite) SetupTest() {
 	dir, err := ioutil.TempDir("", "test_")
 	if err != nil {
 		panic(err)
@@ -29,13 +29,13 @@ func (suite *MaxMindDBBaseTestSuite) SetupTest() {
 	suite.m = &maxmindBase{}
 }
 
-func (suite *MaxMindDBBaseTestSuite) TearDownTest() {
+func (suite *MaxmindDBBaseTestSuite) TearDownTest() {
 	suite.m.Shutdown()
 	os.Chmod(suite.tmpDir, 0777) // nolint: errcheck
 	os.RemoveAll(suite.tmpDir)
 }
 
-func (suite *MaxMindDBBaseTestSuite) GetTestdataPath() string {
+func (suite *MaxmindDBBaseTestSuite) GetTestdataPath() string {
 	absPath, err := filepath.Abs("testdata")
 	if err != nil {
 		panic(err)
@@ -44,7 +44,7 @@ func (suite *MaxMindDBBaseTestSuite) GetTestdataPath() string {
 	return absPath
 }
 
-func (suite *MaxMindDBBaseTestSuite) TestOpenErrorNoFile() {
+func (suite *MaxmindDBBaseTestSuite) TestOpenErrorNoFile() {
 	if err := os.Chmod(suite.tmpDir, 0400); err != nil {
 		panic(err)
 	}
@@ -52,14 +52,14 @@ func (suite *MaxMindDBBaseTestSuite) TestOpenErrorNoFile() {
 	suite.Error(suite.m.Open(suite.tmpDir))
 }
 
-func (suite *MaxMindDBBaseTestSuite) TestOpenErrorBadFile() {
+func (suite *MaxmindDBBaseTestSuite) TestOpenErrorBadFile() {
 	path := filepath.Join(suite.GetTestdataPath(),
 		"maxmind", "error", "target_xxx")
 
 	suite.Error(suite.m.Open(path))
 }
 
-func (suite *MaxMindDBBaseTestSuite) TestOpenOk() {
+func (suite *MaxmindDBBaseTestSuite) TestOpenOk() {
 	path := filepath.Join(suite.GetTestdataPath(),
 		"maxmind", "ok", "target_xxx")
 
@@ -67,13 +67,13 @@ func (suite *MaxMindDBBaseTestSuite) TestOpenOk() {
 	suite.NotNil(suite.m.dbReader)
 }
 
-func (suite *MaxMindDBBaseTestSuite) TestLookupNotReady() {
+func (suite *MaxmindDBBaseTestSuite) TestLookupNotReady() {
 	_, err := suite.m.Lookup(context.Background(), net.ParseIP("81.2.69.142"))
 
 	suite.True(errors.Is(err, ErrDatabaseIsNotReadyYet))
 }
 
-func (suite *MaxMindDBBaseTestSuite) TestLookupBadIP() {
+func (suite *MaxmindDBBaseTestSuite) TestLookupBadIP() {
 	path := filepath.Join(suite.GetTestdataPath(),
 		"maxmind", "ok", "target_xxx")
 
@@ -84,7 +84,7 @@ func (suite *MaxMindDBBaseTestSuite) TestLookupBadIP() {
 	suite.Error(err)
 }
 
-func (suite *MaxMindDBBaseTestSuite) TestLookupOk() {
+func (suite *MaxmindDBBaseTestSuite) TestLookupOk() {
 	path := filepath.Join(suite.GetTestdataPath(),
 		"maxmind", "ok", "target_xxx")
 
@@ -97,6 +97,6 @@ func (suite *MaxMindDBBaseTestSuite) TestLookupOk() {
 	suite.Equal("London", result.City)
 }
 
-func TestMaxMindDBBase(t *testing.T) {
-	suite.Run(t, &MaxMindDBBaseTestSuite{})
+func TestMaxmindDBBase(t *testing.T) {
+	suite.Run(t, &MaxmindDBBaseTestSuite{})
 }
