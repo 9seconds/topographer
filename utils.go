@@ -38,7 +38,8 @@ func makeProviders(conf *config) ([]topolib.Provider, error) {
 		case providers.NameIP2C:
 			rv = append(rv, providers.NewIP2C(makeNewHTTPClient(v)))
 		case providers.NameIPInfo:
-			rv = append(rv, providers.NewIPInfo(makeNewHTTPClient(v), v.GetSpecificParameters()))
+			token := v.GetSpecificParameters()["auth_token"]
+			rv = append(rv, providers.NewIPInfo(makeNewHTTPClient(v), token))
 		case providers.NameKeyCDN:
 			rv = append(rv, providers.NewKeyCDN(makeNewHTTPClient(v)))
 		case providers.NameDBIPLite:

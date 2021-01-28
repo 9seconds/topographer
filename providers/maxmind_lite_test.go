@@ -134,9 +134,9 @@ func (suite *MaxmindLiteTestSuite) TestCannotExtractArchiveNotTar() {
 	w := gzip.NewWriter(buf)
 	hasher := sha256.New()
 
-	w.Write([]byte("hello"))
+	w.Write([]byte("hello")) // nolint: errcheck
 	w.Close()
-	hasher.Write(buf.Bytes())
+	hasher.Write(buf.Bytes()) // nolint: errcheck
 
 	hashed := hex.EncodeToString(hasher.Sum(nil))
 
@@ -159,17 +159,17 @@ func (suite *MaxmindLiteTestSuite) TestCannotExtractArchiveNoFileInTar() {
 	tarFile := tar.NewWriter(w)
 	hasher := sha256.New()
 
-	tarFile.WriteHeader(&tar.Header{
+	tarFile.WriteHeader(&tar.Header{ // nolint: errcheck
 		Typeflag: tar.TypeReg,
 		Name:     "file.txt",
 		Mode:     0644,
 		ModTime:  time.Now(),
 		Size:     5,
 	})
-	tarFile.Write([]byte("hello"))
+	tarFile.Write([]byte("hello")) // nolint: errcheck
 	tarFile.Close()
 	w.Close()
-	hasher.Write(buf.Bytes())
+	hasher.Write(buf.Bytes()) // nolint: errcheck
 
 	hashed := hex.EncodeToString(hasher.Sum(nil))
 
@@ -192,17 +192,17 @@ func (suite *MaxmindLiteTestSuite) TestOk() {
 	tarFile := tar.NewWriter(w)
 	hasher := sha256.New()
 
-	tarFile.WriteHeader(&tar.Header{
+	tarFile.WriteHeader(&tar.Header{ // nolint: errcheck
 		Typeflag: tar.TypeReg,
 		Name:     "file.mmdb",
 		Mode:     0644,
 		ModTime:  time.Now(),
 		Size:     5,
 	})
-	tarFile.Write([]byte("hello"))
+	tarFile.Write([]byte("hello")) // nolint: errcheck
 	tarFile.Close()
 	w.Close()
-	hasher.Write(buf.Bytes())
+	hasher.Write(buf.Bytes()) // nolint: errcheck
 
 	hashed := hex.EncodeToString(hasher.Sum(nil))
 
