@@ -38,23 +38,8 @@ func (i ipstackProvider) Name() string {
 
 func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
 	result := topolib.ProviderLookupResult{}
-	getQuery := url.Values{}
 
-	getQuery.Set("access_key", i.authToken)
-	getQuery.Set("output", "json")
-	getQuery.Set("fields", "country_code,city")
-	getQuery.Set("language", "en")
-	getQuery.Set("hostname", "0")
-	getQuery.Set("security", "0")
-
-	u := &url.URL{
-		Scheme:   i.httpScheme,
-		Host:     "api.ipstack.com",
-		Path:     ip.String(),
-		RawQuery: getQuery.Encode(),
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, i.buildURL(ip), nil)
 	if err != nil {
 		return result, fmt.Errorf("cannot build a request: %w", err)
 	}
@@ -67,7 +52,7 @@ func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provide
 	}
 
 	defer func() {
-        io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
+		io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 		resp.Body.Close()
 	}()
 
@@ -94,6 +79,26 @@ func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provide
 	result.CountryCode = jsonResponse.Country
 
 	return result, nil
+}
+
+func (i ipstackProvider) buildURL(ip net.IP) string {
+	getQuery := url.Values{}
+
+	getQuery.Set("access_key", i.authToken)
+	getQuery.Set("output", "json")
+	getQuery.Set("fields", "country_code,city")
+	getQuery.Set("language", "en")
+	getQuery.Set("hostname", "0")
+	getQuery.Set("security", "0")
+
+	u := &url.URL{
+		Scheme:   i.httpScheme,
+		Host:     "api.ipstack.com",
+		Path:     ip.String(),
+		RawQuery: getQuery.Encode(),
+	}
+
+	return u.String()
 }
 
 func NewIPStack(client topolib.HTTPClient, authToken string, isSecure bool) topolib.Provider {
