@@ -67,7 +67,7 @@ func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provide
 	}
 
 	defer func() {
-		io.Copy(ioutil.Discard, resp.Body)
+        io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
 		resp.Body.Close()
 	}()
 

@@ -76,7 +76,7 @@ func (suite *MockedIPStackTestSuite) TestLookupError() {
 
 func (suite *MockedIPStackTestSuite) TestLookupOK() {
 	httpmock.RegisterResponder("GET",
-		"https://api.ipstack.com/23.22.13.113?access_key=token",
+		"https://api.ipstack.com/23.22.13.113",
 		httpmock.NewStringResponder(http.StatusOK, `{
 "country_code": "RU", "city": "Moscow"
         }`))
