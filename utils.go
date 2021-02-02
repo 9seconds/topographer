@@ -40,8 +40,6 @@ func makeProviders(conf *config) ([]topolib.Provider, error) {
 		case providers.NameIPInfo:
 			token := v.GetSpecificParameters()["auth_token"]
 			rv = append(rv, providers.NewIPInfo(makeNewHTTPClient(v), token))
-		case providers.NameKeyCDN:
-			rv = append(rv, providers.NewKeyCDN(makeNewHTTPClient(v)))
 		case providers.NameDBIPLite:
 			baseDir := filepath.Join(conf.GetRootDirectory(), v.GetDirectory())
 			if err := os.MkdirAll(baseDir, 0777); err != nil {
