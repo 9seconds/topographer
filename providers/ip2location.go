@@ -52,7 +52,7 @@ func (i *ip2locationProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Pr
 }
 
 func (i *ip2locationProvider) Open(rootDir string) error {
-    return nil
+	return nil
 }
 
 func (i *ip2locationProvider) Shutdown() {
@@ -82,14 +82,14 @@ func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) erro
 
 	defer func() {
 		tempFile.Close()
-		os.Remove(filepath.Join(rootDir, tempFile.Name()))
+		os.Remove(tempFile.Name())
 	}()
 
-	if _, err := io.Copy(bufio.NewWriter(tempFile), bufio.NewReader(resp.Body)); err != nil {
+	if _, err := io.Copy(tempFile, bufio.NewReader(resp.Body)); err != nil {
 		return fmt.Errorf("cannot copy archive: %w", err)
 	}
 
-    if _, err := tempFile.Seek(0, io.SeekStart); err != nil {
+	if _, err := tempFile.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("cannot seek to the start of the file: %w", err)
 	}
 
