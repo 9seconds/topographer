@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const envApiKey = "MAXMIND_API_KEY"
+const maxmindEnvApiKey = "MAXMIND_API_KEY"
 
 type MaxmindLiteTestSuite struct {
 	TmpDirTestSuite
@@ -238,7 +238,7 @@ func (suite *IntegrationMaxmindLiteTestSuite) TearDownTest() {
 }
 
 func (suite *IntegrationMaxmindLiteTestSuite) TestFull() {
-	prov := providers.NewMaxmindLite(suite.http, time.Minute, "", os.Getenv(envApiKey))
+	prov := providers.NewMaxmindLite(suite.http, time.Minute, "", os.Getenv(maxmindEnvApiKey))
 
 	suite.NoError(prov.Download(context.Background(), suite.tmpDir))
 	suite.NoError(prov.Open(suite.tmpDir))
@@ -258,8 +258,8 @@ func TestIntegrationMaxmindLite(t *testing.T) {
 		return
 	}
 
-	if os.Getenv(envApiKey) == "" {
-		t.Skip("Skipped because " + envApiKey + " environment variable is empty")
+	if os.Getenv(maxmindEnvApiKey) == "" {
+		t.Skip("Skipped because " + maxmindEnvApiKey + " environment variable is empty")
 		return
 	}
 

@@ -91,7 +91,7 @@ func (i ipstackProvider) buildURL(ip net.IP) string {
 	getQuery.Set("hostname", "0")
 	getQuery.Set("security", "0")
 
-	u := &url.URL{
+	u := url.URL{
 		Scheme:   i.httpScheme,
 		Host:     "api.ipstack.com",
 		Path:     ip.String(),
@@ -101,16 +101,20 @@ func (i ipstackProvider) buildURL(ip net.IP) string {
 	return u.String()
 }
 
-func NewIPStack(client topolib.HTTPClient, authToken string, isSecure bool) topolib.Provider {
+func NewIPStack(client topolib.HTTPClient, authToken string, isSecure bool) (topolib.Provider, error) {
 	scheme := "http"
 
 	if isSecure {
 		scheme = "https"
 	}
 
+	if authToken == "" {
+		return nil, ErrAuthTokenIsRequired
+	}
+
 	return ipstackProvider{
 		client:     client,
 		authToken:  authToken,
 		httpScheme: scheme,
-	}
+	}, nil
 }

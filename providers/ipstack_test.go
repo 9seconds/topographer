@@ -21,7 +21,13 @@ type MockedIPStackTestSuite struct {
 func (suite *MockedIPStackTestSuite) SetupTest() {
 	suite.OnlineProviderTestSuite.SetupTest()
 
-	suite.prov = providers.NewIPStack(suite.http, "token", true)
+	prov, err := providers.NewIPStack(suite.http, "token", true)
+
+	if err != nil {
+		panic(err)
+	}
+
+	suite.prov = prov
 }
 
 func (suite *MockedIPStackTestSuite) TestName() {
@@ -96,7 +102,11 @@ type IntegrationIPStackTestSuite struct {
 func (suite *IntegrationIPStackTestSuite) SetupTest() {
 	suite.OnlineProviderTestSuite.SetupTest()
 
-	suite.prov = providers.NewIPStack(suite.http, os.Getenv("IPSTACK_API_KEY"), false)
+	prov, err := providers.NewIPStack(suite.http, os.Getenv("IPSTACK_API_KEY"), false)
+
+	suite.NoError(err)
+
+	suite.prov = prov
 }
 
 func (suite *IntegrationIPStackTestSuite) TestLookup() {

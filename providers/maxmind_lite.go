@@ -168,6 +168,8 @@ func (m *maxmindLiteProvider) extractArchive(rootDir string) error {
 		return fmt.Errorf("cannot create a file for a database: %w", err)
 	}
 
+	defer os.Remove(filepath.Join(rootDir, maxmindLiteArchiveName))
+
 	ungzipReader, err := gzip.NewReader(archiveFile)
 	if err != nil {
 		return fmt.Errorf("cannot create a gzip reader: %w", err)
@@ -177,26 +179,22 @@ func (m *maxmindLiteProvider) extractArchive(rootDir string) error {
 
 	for {
 		header, err := tarReader.Next()
-		if err != nil {
+
+		switch {
+		case err == io.EOF:
+			return ErrNoFile
+		case err != nil:
 			return fmt.Errorf("cannot extract a header: %w", err)
-		}
-
-		if header.Linkname != "" || header.FileInfo().IsDir() {
+		case header.Linkname != "", header.FileInfo().IsDir():
 			continue
-		}
+		case strings.ToUpper(filepath.Ext(header.Name)) == ".MMDB":
+			if _, err := io.Copy(databaseFile, tarReader); err != nil {
+				return fmt.Errorf("cannot copy into a database file: %w", err)
+			}
 
-		if filepath.Ext(header.Name) == ".mmdb" {
-			break
+			return nil
 		}
 	}
-
-	if _, err := io.Copy(databaseFile, tarReader); err != nil {
-		return fmt.Errorf("cannot copy into a database file: %w", err)
-	}
-
-	os.Remove(filepath.Join(rootDir, maxmindLiteArchiveName))
-
-	return nil
 }
 
 func (m *maxmindLiteProvider) buildURL(suffix string) string {
