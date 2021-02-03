@@ -6,6 +6,7 @@ require (
 	github.com/antchfx/htmlquery v1.2.3
 	github.com/antzucaro/matchr v0.0.0-20191224151129-ab6ba461ddec
 	github.com/dgraph-io/ristretto v0.0.3
+	github.com/ip2location/ip2location-go v8.3.0+incompatible
 	github.com/jarcoal/httpmock v1.0.7
 	github.com/leaanthony/clir v1.0.4
 	github.com/mccutchen/go-httpbin v1.1.1

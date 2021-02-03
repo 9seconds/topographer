@@ -2,6 +2,7 @@ package providers_test
 
 import (
 	"context"
+	"net"
 	"os"
 	"testing"
 	"time"
@@ -69,6 +70,13 @@ func (suite *IntegrationIP2LocationTestSuite) TestFull() {
 	ctx := context.Background()
 
 	suite.NoError(suite.prov.Download(ctx, suite.tmpDir))
+	suite.NoError(suite.prov.Open(suite.tmpDir))
+
+	res, err := suite.prov.Lookup(context.Background(), net.ParseIP("80.80.80.80"))
+
+	suite.NoError(err)
+    suite.Equal("Amsterdam", res.City)
+    suite.Equal("NL", res.CountryCode)
 }
 
 func TestIP2Location(t *testing.T) {

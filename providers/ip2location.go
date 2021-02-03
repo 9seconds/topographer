@@ -13,9 +13,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/9seconds/topographer/topolib"
+	"github.com/ip2location/ip2location-go"
 )
 
 const (
@@ -29,6 +31,8 @@ type ip2locationProvider struct {
 	dbCode        string
 	authToken     string
 	baseDirectory string
+	db            *ip2location.DB
+	dbMutex       sync.RWMutex
 	updateEvery   time.Duration
 	httpClient    topolib.HTTPClient
 }
@@ -48,15 +52,50 @@ func (i *ip2locationProvider) BaseDirectory() string {
 func (i *ip2locationProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
 	result := topolib.ProviderLookupResult{}
 
+	i.dbMutex.RLock()
+	defer i.dbMutex.RUnlock()
+
+	if i.db == nil {
+		return result, ErrDatabaseIsNotReadyYet
+	}
+
+	resolved, err := i.db.Get_all(ip.String())
+    if err != nil {
+        return result, fmt.Errorf("cannot resolve ip address: %w", err)
+    }
+
+    result.City = resolved.City
+    result.CountryCode = resolved.Country_short
+
 	return result, nil
 }
 
 func (i *ip2locationProvider) Open(rootDir string) error {
+	db, err := ip2location.OpenDB(filepath.Join(rootDir, ip2locationFileName))
+	if err != nil {
+		return fmt.Errorf("cannot open a new database: %w", err)
+	}
+
+	i.dbMutex.Lock()
+	defer i.dbMutex.Unlock()
+
+	if i.db != nil {
+		i.db.Close()
+	}
+
+	i.db = db
+
 	return nil
 }
 
 func (i *ip2locationProvider) Shutdown() {
+	i.dbMutex.Lock()
+	defer i.dbMutex.Unlock()
 
+	if i.db != nil {
+		i.db.Close()
+		i.db = nil
+	}
 }
 
 func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) error {
