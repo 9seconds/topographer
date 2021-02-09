@@ -124,12 +124,10 @@ func TestIPStack(t *testing.T) {
 func TestIntegrationIPStack(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipped becaue of the short mode")
-		return
 	}
 
 	if os.Getenv("IPSTACK_API_KEY") == "" {
 		t.Skip("Skipped because there is no IPSTACK_API_KEY in environment")
-		return
 	}
 
 	suite.Run(t, &IntegrationIPStackTestSuite{})

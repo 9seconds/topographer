@@ -2,7 +2,6 @@ package providers
 
 import (
 	"archive/zip"
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -60,12 +59,12 @@ func (i *ip2locationProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Pr
 	}
 
 	resolved, err := i.db.Get_all(ip.String())
-    if err != nil {
-        return result, fmt.Errorf("cannot resolve ip address: %w", err)
-    }
+	if err != nil {
+		return result, fmt.Errorf("cannot resolve ip address: %w", err)
+	}
 
-    result.City = resolved.City
-    result.CountryCode = resolved.Country_short
+	result.City = resolved.City
+	result.CountryCode = resolved.Country_short
 
 	return result, nil
 }
@@ -99,20 +98,14 @@ func (i *ip2locationProvider) Shutdown() {
 }
 
 func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, i.buildURL(), nil)
-	if err != nil {
-		return fmt.Errorf("cannot build a request: %w", err)
-	}
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.buildURL(), nil)
 
 	resp, err := i.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("cannot request a file download: %w", err)
 	}
 
-	defer func() {
-		io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
-		resp.Body.Close()
-	}()
+	defer flushResponse(resp.Body)
 
 	tempFile, err := ioutil.TempFile(rootDir, "archive-zip-")
 	if err != nil {
@@ -124,7 +117,7 @@ func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) erro
 		os.Remove(tempFile.Name())
 	}()
 
-	if _, err := io.Copy(tempFile, bufio.NewReader(resp.Body)); err != nil {
+	if err := copyResponse(tempFile, resp.Body); err != nil {
 		return fmt.Errorf("cannot copy archive: %w", err)
 	}
 

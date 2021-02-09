@@ -5,11 +5,8 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/sha1"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -63,11 +60,8 @@ func (d *dbipLiteProvider) Download(ctx context.Context, rootDir string) error {
 }
 
 func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet,
 		"https://db-ip.com/db/download/ip-to-city-lite", nil)
-	if err != nil {
-		return "", "", fmt.Errorf("cannot compose a request: %w", err)
-	}
 
 	htmlPageResp, err := d.httpClient.Do(req)
 	if err != nil {
@@ -78,10 +72,7 @@ func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, err
 		return "", "", fmt.Errorf("unexpected http response code: %d", htmlPageResp.StatusCode)
 	}
 
-	defer func() {
-		io.Copy(ioutil.Discard, htmlPageResp.Body) // nolint: errcheck
-		htmlPageResp.Body.Close()
-	}()
+	defer flushResponse(htmlPageResp.Body)
 
 	tree, err := htmlquery.Parse(bufio.NewReader(htmlPageResp.Body))
 	if err != nil {
@@ -108,20 +99,14 @@ func (d *dbipLiteProvider) getFileData(ctx context.Context) (string, string, err
 }
 
 func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url, sha1sum string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return fmt.Errorf("cannot compose a request: %w", err)
-	}
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 
 	fileResp, err := d.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("cannot download a file: %w", err)
 	}
 
-	defer func() {
-		io.Copy(ioutil.Discard, fileResp.Body) // nolint: errcheck
-		fileResp.Body.Close()
-	}()
+	defer flushResponse(fileResp.Body)
 
 	fileReader, err := gzip.NewReader(fileResp.Body)
 	if err != nil {
@@ -133,13 +118,10 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url
 		return fmt.Errorf("cannot open a target file: %w", err)
 	}
 
-	hasher := sha1.New()
-
-	if _, err := io.Copy(io.MultiWriter(hasher, db), fileReader); err != nil {
+	checksum, err := hashedCopyResponse(sha1.New, db, fileReader)
+	if err != nil {
 		return fmt.Errorf("cannot save a file on filesystem: %w", err)
 	}
-
-	checksum := hex.EncodeToString(hasher.Sum(nil))
 
 	if !strings.EqualFold(checksum, sha1sum) {
 		return fmt.Errorf("checksum mismatch. expected %s, got %s", sha1sum, checksum)

@@ -255,12 +255,10 @@ func TestMaxmindLite(t *testing.T) {
 func TestIntegrationMaxmindLite(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipped because of the short mode")
-		return
 	}
 
 	if os.Getenv(maxmindEnvApiKey) == "" {
 		t.Skip("Skipped because " + maxmindEnvApiKey + " environment variable is empty")
-		return
 	}
 
 	suite.Run(t, &IntegrationMaxmindLiteTestSuite{})

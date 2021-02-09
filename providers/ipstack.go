@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -39,10 +37,7 @@ func (i ipstackProvider) Name() string {
 func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
 	result := topolib.ProviderLookupResult{}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, i.buildURL(ip), nil)
-	if err != nil {
-		return result, fmt.Errorf("cannot build a request: %w", err)
-	}
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.buildURL(ip), nil)
 
 	req.Header.Set("Accept", "application/json")
 
@@ -51,10 +46,7 @@ func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provide
 		return result, fmt.Errorf("cannot send a request: %w", err)
 	}
 
-	defer func() {
-		io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
-		resp.Body.Close()
-	}()
+    defer flushResponse(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return result, fmt.Errorf("unexpected status code: %d", resp.StatusCode)

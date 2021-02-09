@@ -107,7 +107,6 @@ func TestIP2C(t *testing.T) {
 func TestIntegrationIP2C(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipped because of the short mode")
-		return
 	}
 
 	suite.Run(t, &IntegrationIP2CTestSuite{})

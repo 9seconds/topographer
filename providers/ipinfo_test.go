@@ -107,7 +107,6 @@ func TestIPInfo(t *testing.T) {
 func TestIntegrationIPInfo(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipped because of the short mode")
-		return
 	}
 
 	suite.Run(t, &IntegrationIPInfoTestSuite{})

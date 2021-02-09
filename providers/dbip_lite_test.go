@@ -277,7 +277,6 @@ func TestDBIP(t *testing.T) {
 func TestIntegrationDBIP(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipped because of the short mode")
-		return
 	}
 
 	suite.Run(t, &IntegrationDBIPTestSuite{})

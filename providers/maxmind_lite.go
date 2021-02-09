@@ -6,7 +6,6 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -77,20 +76,14 @@ func (m *maxmindLiteProvider) Download(ctx context.Context, rootDir string) erro
 }
 
 func (m *maxmindLiteProvider) downloadChecksum(ctx context.Context) (string, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", m.buildURL("tar.gz.sha256"), nil)
-	if err != nil {
-		panic(err)
-	}
+	req, _ := http.NewRequestWithContext(ctx, "GET", m.buildURL("tar.gz.sha256"), nil)
 
 	resp, err := m.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("cannot fetch checksum page: %w", err)
 	}
 
-	defer func() {
-		io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
-		resp.Body.Close()
-	}()
+	defer flushResponse(resp.Body)
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -115,36 +108,29 @@ func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir strin
 		return "", fmt.Errorf("cannot create an archive file: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", m.buildURL("tar.gz"), nil)
-	if err != nil {
-		panic(err)
-	}
+	req, _ := http.NewRequestWithContext(ctx, "GET", m.buildURL("tar.gz"), nil)
 
 	resp, err := m.httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("cannot download an archive: %w", err)
 	}
 
-	defer func() {
-		io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
-		resp.Body.Close()
-	}()
+	defer flushResponse(resp.Body)
 
 	pipeReadEnd, pipeWriteEnd := io.Pipe()
 
 	defer pipeReadEnd.Close()
 	defer pipeWriteEnd.Close()
 
-	hasher := sha256.New()
 	errChan := make(chan error)
-	writer := io.MultiWriter(hasher, pipeWriteEnd)
 
 	go func() {
 		_, err := io.Copy(tarFile, pipeReadEnd)
 		errChan <- err
 	}()
 
-	if _, err := io.Copy(writer, resp.Body); err != nil {
+	checksum, err := hashedCopyResponse(sha256.New, pipeWriteEnd, resp.Body)
+	if err != nil {
 		return "", fmt.Errorf("cannot copy file into fs: %w", err)
 	}
 
@@ -154,7 +140,7 @@ func (m *maxmindLiteProvider) downloadArchive(ctx context.Context, rootDir strin
 		return "", fmt.Errorf("cannot write to tar file: %w", err)
 	}
 
-	return hex.EncodeToString(hasher.Sum(nil)), nil
+	return checksum, nil
 }
 
 func (m *maxmindLiteProvider) extractArchive(rootDir string) error {

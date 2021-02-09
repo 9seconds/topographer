@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -34,21 +33,14 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 	}
 
 	number := strconv.Itoa(int(binary.BigEndian.Uint32(ip4)))
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://ip2c.org/?dec="+number, nil)
-	if err != nil {
-		return result, fmt.Errorf("cannot build a request: %w", err)
-	}
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "https://ip2c.org/?dec="+number, nil)
 
 	resp, err := i.client.Do(req)
 	if err != nil {
 		return result, fmt.Errorf("cannot send a request: %w", err)
 	}
 
-	defer func() {
-		io.Copy(ioutil.Discard, resp.Body) // nolint: errcheck
-		resp.Body.Close()
-	}()
+	defer flushResponse(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return result, fmt.Errorf("unexpected status code: %d", resp.StatusCode)

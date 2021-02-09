@@ -200,12 +200,10 @@ func TestIP2Location(t *testing.T) {
 func TestIntegrationIP2Location(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipped because of the short mode")
-		return
 	}
 
 	if os.Getenv(ip2locationEnvApiKey) == "" {
 		t.Skip("Skipped because " + ip2locationEnvApiKey + " environment variable is empty")
-		return
 	}
 
 	suite.Run(t, &IntegrationIP2LocationTestSuite{})
