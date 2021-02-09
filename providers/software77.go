@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/md5"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -33,6 +34,8 @@ const (
 )
 
 type software77Provider struct {
+	db            *software77DB
+	dbMutex       sync.RWMutex
 	baseDirectory string
 	updateEvery   time.Duration
 	httpClient    topolib.HTTPClient
@@ -53,15 +56,105 @@ func (s *software77Provider) BaseDirectory() string {
 func (s *software77Provider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
 	result := topolib.ProviderLookupResult{}
 
+	if s.db == nil {
+		return result, ErrDatabaseIsNotReadyYet
+	}
+
+	s.dbMutex.RLock()
+	defer s.dbMutex.RUnlock()
+
+	res, err := s.db.Lookup(ip)
+	if err != nil {
+		return result, fmt.Errorf("cannot lookup: %w", err)
+	}
+
+	result.CountryCode = res
+
 	return result, nil
 }
 
 func (s *software77Provider) Open(rootDir string) error {
+	db := newSoftware77DB()
+
+	if err := s.openV4(db, rootDir); err != nil {
+		return fmt.Errorf("cannot process db with v4 addresses: %w", err)
+	}
+
+	if err := s.openV6(db, rootDir); err != nil {
+		return fmt.Errorf("cannot process db with v4 addresses: %w", err)
+	}
+
+	s.dbMutex.Lock()
+	defer s.dbMutex.Unlock()
+
+	s.db = db
+
 	return nil
 }
 
-func (s *software77Provider) Shutdown() {
+func (s *software77Provider) openV4(db *software77DB, rootDir string) error {
+	fp, err := os.Open(filepath.Join(rootDir, software77IPv4FileName))
+	if err != nil {
+		return fmt.Errorf("cannot open a file: %w", err)
+	}
 
+	defer fp.Close()
+
+	csvReader := csv.NewReader(fp)
+	csvReader.Comment = '#'
+	csvReader.TrimLeadingSpace = true
+	csvReader.ReuseRecord = true
+
+	for {
+		record, err := csvReader.Read()
+
+		switch err {
+		case nil:
+			if err := db.AddIPv4Range(record[0], record[1], record[4]); err != nil {
+				return fmt.Errorf("cannot parse a line: %w", err)
+			}
+		case io.EOF:
+			return nil
+		default:
+			return fmt.Errorf("unexpected error: %w", err)
+		}
+	}
+}
+
+func (s *software77Provider) openV6(db *software77DB, rootDir string) error {
+	fp, err := os.Open(filepath.Join(rootDir, software77IPv6FileName))
+	if err != nil {
+		return fmt.Errorf("cannot open a file: %w", err)
+	}
+
+	defer fp.Close()
+
+	csvReader := csv.NewReader(fp)
+	csvReader.Comment = '#'
+	csvReader.TrimLeadingSpace = true
+	csvReader.ReuseRecord = true
+
+	for {
+		record, err := csvReader.Read()
+
+		switch err {
+		case nil:
+			if err := db.AddIPv6CIDR(record[0], record[1]); err != nil {
+				return fmt.Errorf("cannot parse a line: %w", err)
+			}
+		case io.EOF:
+			return nil
+		default:
+			return fmt.Errorf("unexpected error: %w", err)
+		}
+	}
+}
+
+func (s *software77Provider) Shutdown() {
+	s.dbMutex.Lock()
+	defer s.dbMutex.Unlock()
+
+	s.db = nil
 }
 
 func (s *software77Provider) Download(ctx context.Context, rootDir string) error {
@@ -69,6 +162,8 @@ func (s *software77Provider) Download(ctx context.Context, rootDir string) error
 	defer cancel()
 
 	errChan := make(chan error, 2)
+	defer close(errChan)
+
 	wg := &sync.WaitGroup{}
 
 	wg.Add(2)

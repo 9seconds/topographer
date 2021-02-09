@@ -2,7 +2,7 @@ package providers_test
 
 import (
 	"context"
-	"fmt"
+	"net"
 	"path/filepath"
 	"testing"
 	"time"
@@ -52,14 +52,20 @@ func (suite *IntegrationSoftware77TestSuite) SetupTest() {
 
 func (suite *IntegrationSoftware77TestSuite) TearDownTest() {
 	suite.OfflineProviderTestSuite.TearDownTest()
-	// suite.TmpDirTestSuite.TearDownTest()
+	suite.TmpDirTestSuite.TearDownTest()
 }
 
 func (suite *IntegrationSoftware77TestSuite) TestFull() {
 	ctx := context.Background()
 
 	suite.NoError(suite.prov.Download(ctx, suite.tmpDir))
-	fmt.Println(suite.tmpDir)
+	suite.NoError(suite.prov.Open(suite.tmpDir))
+	suite.NoError(suite.prov.Open(suite.tmpDir))
+
+	res, err := suite.prov.Lookup(ctx, net.ParseIP("80.80.80.80"))
+
+	suite.NoError(err)
+	suite.Equal("NL", res.CountryCode)
 }
 
 func TestSoftware77(t *testing.T) {

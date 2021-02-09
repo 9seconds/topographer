@@ -3,11 +3,13 @@ module github.com/9seconds/topographer
 go 1.15
 
 require (
+	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
 	github.com/antchfx/htmlquery v1.2.3
 	github.com/antzucaro/matchr v0.0.0-20191224151129-ab6ba461ddec
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/ip2location/ip2location-go v8.3.0+incompatible
 	github.com/jarcoal/httpmock v1.0.7
+	github.com/kentik/patricia v0.0.0-20201202224819-f9447a6e25f1
 	github.com/leaanthony/clir v1.0.4
 	github.com/mccutchen/go-httpbin v1.1.1
 	github.com/mercari/go-circuitbreaker v0.0.0-20201130021310-aff740600e91

@@ -1,0 +1,34 @@
+#
+# INFORMATION AND NOTES ON IpToCountry
+# ====================================
+#
+# LICENSE: "DONATIONWARE"
+# =======================
+#
+# Definition: http://en.wikipedia.org/wiki/Donationware
+# Definition: http://www.techterms.com/definition/donationware
+#
+# This database is "DONATIONWARE"
+# ===============================
+2001:1250::/32,MX,lacnic,1150416000
+2001:1258::/32,MX,lacnic,1227484800
+2001:1260::/32,MX,lacnic,1293408000
+2001:1270::/32,MX,lacnic,1255392000
+2001:1278::/32,MX,lacnic,1282521600
+2001:1280::/32,BR,lacnic,1198022400
+2001:1284::/32,BR,lacnic,1198022400
+2001:1288::/32,BR,lacnic,1198022400
+2001:128c::/32,BR,lacnic,1198800000
+2001:1290::/32,BR,lacnic,1201564800
+2001:1291::/32,BR,lacnic,1213056000
+2001:1294::/32,BR,lacnic,1202688000
+2001:1298::/32,BR,lacnic,1207612800
+2001:129c::/32,BR,lacnic,1213056000
+2001:12a0::/32,BR,lacnic,1213056000
+2001:12a4::/32,BR,lacnic,1214524800
+2001:12ac::/32,BR,lacnic,1217289600
+2001:12b0::/32,BR,lacnic,1218153600
+2001:12b4::/32,BR,lacnic,1219795200
+2001:12b8::/32,BR,lacnic,1220832000
+2001:12bc::/32,BR,lacnic,1220832000
+2001:12c0::/32,BR,lacnic,1225411200
