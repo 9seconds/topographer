@@ -63,6 +63,14 @@ func (suite *MockedIP2LocationTestSuite) TestBaseDirectory() {
 	suite.Equal(suite.BaseDirectory(), suite.prov.BaseDirectory())
 }
 
+func (suite *MockedIP2LocationTestSuite) TestDownloadCancelledContext() {
+    ctx, cancel := context.WithCancel(context.Background())
+
+    cancel()
+
+	suite.Error(suite.prov.Download(ctx, suite.tmpDir))
+}
+
 func (suite *MockedIP2LocationTestSuite) TestDownloadUrlNotFound() {
 	ctx := context.Background()
 

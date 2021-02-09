@@ -14,11 +14,16 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/9seconds/topographer/topolib"
+)
+
+var (
+	software77Md5ChecksumRegexp = regexp.MustCompile(`(?i)[0-9a-f]{32}`)
 )
 
 const (
@@ -56,12 +61,12 @@ func (s *software77Provider) BaseDirectory() string {
 func (s *software77Provider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
 	result := topolib.ProviderLookupResult{}
 
+	s.dbMutex.RLock()
+	defer s.dbMutex.RUnlock()
+
 	if s.db == nil {
 		return result, ErrDatabaseIsNotReadyYet
 	}
-
-	s.dbMutex.RLock()
-	defer s.dbMutex.RUnlock()
 
 	res, err := s.db.Lookup(ip)
 	if err != nil {
@@ -269,6 +274,10 @@ func (s *software77Provider) downloadCsvChecksum(ctx context.Context, md5Param s
 	}
 
 	content = bytes.TrimSpace(content)
+
+	if !software77Md5ChecksumRegexp.Match(content) {
+		return "", fmt.Errorf("incorrect checksum: %s", string(content))
+	}
 
 	return string(content), nil
 }
