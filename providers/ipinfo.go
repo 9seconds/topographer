@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 
 	"github.com/9seconds/topographer/topolib"
 )
@@ -31,7 +32,7 @@ func (i ipinfoProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provider
 	result := topolib.ProviderLookupResult{}
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet,
-		"https://ipinfo.io/"+ip.String(), nil)
+		i.buildURL(ip), nil)
 
 	req.Header.Set("Accept", "application/json")
 
@@ -61,6 +62,16 @@ func (i ipinfoProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provider
 	result.CountryCode = jsonResponse.Country
 
 	return result, nil
+}
+
+func (i ipinfoProvider) buildURL(ip net.IP) string {
+	u := url.URL{
+		Scheme: "https",
+		Host:   "ipinfo.io",
+		Path:   ip.String(),
+	}
+
+	return u.String()
 }
 
 func NewIPInfo(client topolib.HTTPClient, authToken string) topolib.Provider {

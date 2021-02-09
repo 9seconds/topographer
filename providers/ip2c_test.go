@@ -39,7 +39,7 @@ func (suite *MockedIP2CTestSuite) TestLookupClosedContext() {
 
 func (suite *MockedIP2CTestSuite) TestLookupFailed() {
 	httpmock.RegisterResponder("GET",
-		"https://ip2c.org/?dec=84281096",
+		"https://ip2c.org?dec=84281096",
 		httpmock.NewStringResponder(http.StatusInternalServerError, ""))
 
 	_, err := suite.prov.Lookup(context.Background(),
@@ -50,7 +50,7 @@ func (suite *MockedIP2CTestSuite) TestLookupFailed() {
 
 func (suite *MockedIP2CTestSuite) TestLookupIncorrectFormat() {
 	httpmock.RegisterResponder("GET",
-		"https://ip2c.org/?dec=84281096",
+		"https://ip2c.org?dec=84281096",
 		httpmock.NewStringResponder(http.StatusOK, "1;DE"))
 
 	_, err := suite.prov.Lookup(context.Background(),
@@ -61,7 +61,7 @@ func (suite *MockedIP2CTestSuite) TestLookupIncorrectFormat() {
 
 func (suite *MockedIP2CTestSuite) TestLookupIncorrectStatusCode() {
 	httpmock.RegisterResponder("GET",
-		"https://ip2c.org/?dec=84281096",
+		"https://ip2c.org?dec=84281096",
 		httpmock.NewStringResponder(http.StatusOK, "0;DE;DEU;Germany"))
 
 	_, err := suite.prov.Lookup(context.Background(),
@@ -72,7 +72,7 @@ func (suite *MockedIP2CTestSuite) TestLookupIncorrectStatusCode() {
 
 func (suite *MockedIP2CTestSuite) TestLookupOk() {
 	httpmock.RegisterResponder("GET",
-		"https://ip2c.org/?dec=84281096",
+		"https://ip2c.org?dec=84281096",
 		httpmock.NewStringResponder(http.StatusOK, "1;DE;DEU;Germany"))
 
 	result, err := suite.prov.Lookup(context.Background(),

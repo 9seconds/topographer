@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -32,8 +33,8 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 		return result, fmt.Errorf("incorrect ipv4 %v", ip)
 	}
 
-	number := strconv.Itoa(int(binary.BigEndian.Uint32(ip4)))
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "https://ip2c.org/?dec="+number, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet,
+		i.buildURL(ip4), nil)
 
 	resp, err := i.client.Do(req)
 	if err != nil {
@@ -64,6 +65,20 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 	result.CountryCode = chunks[1]
 
 	return result, nil
+}
+
+func (i ip2cProvider) buildURL(ip net.IP) string {
+	getQuery := url.Values{}
+
+	getQuery.Set("dec", strconv.Itoa(int(binary.BigEndian.Uint32(ip))))
+
+	u := url.URL{
+		Scheme:   "https",
+		Host:     "ip2c.org",
+		RawQuery: getQuery.Encode(),
+	}
+
+	return u.String()
 }
 
 func NewIP2C(client topolib.HTTPClient) topolib.Provider {
