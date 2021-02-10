@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/9seconds/topographer/providers"
@@ -79,7 +78,7 @@ func (suite *MockedIP2CTestSuite) TestLookupOk() {
 		net.ParseIP("5.6.7.8"))
 
 	suite.NoError(err)
-	suite.Equal("DE", strings.ToUpper(result.CountryCode))
+	suite.Equal("DE", result.CountryCode.String())
 }
 
 type IntegrationIP2CTestSuite struct {
@@ -96,7 +95,7 @@ func (suite *IntegrationIP2CTestSuite) TestLookup() {
 	result, err := suite.prov.Lookup(context.Background(),
 		net.ParseIP("23.22.13.113"))
 
-	suite.Equal("US", strings.ToUpper(result.CountryCode))
+	suite.Equal("US", result.CountryCode.String())
 	suite.NoError(err)
 }
 

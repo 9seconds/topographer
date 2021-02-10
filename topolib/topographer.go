@@ -6,13 +6,11 @@ import (
 	"net"
 	"net/http"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/antzucaro/matchr"
 	"github.com/panjf2000/ants/v2"
-	"github.com/pariz/gountries"
 )
 
 const (
@@ -26,7 +24,6 @@ type Topographer struct {
 	providers  map[string]Provider
 	rwmutex    sync.RWMutex
 	closeOnce  sync.Once
-	countries  *gountries.Query
 	workerPool *ants.PoolWithFunc
 	closed     bool
 }
@@ -90,7 +87,7 @@ func (t *Topographer) Resolve(ctx context.Context,
 	t.rwmutex.RLock()
 	defer t.rwmutex.RUnlock()
 
-    ip = ip.To16()
+	ip = ip.To16()
 	rv := ResolveResult{
 		IP: ip,
 	}
@@ -203,7 +200,7 @@ func (t *Topographer) resolveIPLookup(ctx context.Context,
 		t.logger.LookupError(ip, provider.Name(), err)
 	} else {
 		detail.City = res.City
-		detail.CountryCode = strings.ToUpper(res.CountryCode)
+		detail.CountryCode = res.CountryCode
 	}
 
 	select {
@@ -213,12 +210,12 @@ func (t *Topographer) resolveIPLookup(ctx context.Context,
 }
 
 func (t *Topographer) resolveIPMerge(ip net.IP, results []ResolveResultDetail) ResolveResult {
-	countries := map[string][]*ResolveResultDetail{}
+	countries := map[CountryCode][]*ResolveResultDetail{}
 
 	for i := range results {
 		current := &results[i]
 
-		if current.CountryCode == "" {
+		if !current.CountryCode.Known() {
 			continue
 		}
 
@@ -233,9 +230,9 @@ func (t *Topographer) resolveIPMerge(ip net.IP, results []ResolveResultDetail) R
 	}
 
 	var cityResults []*ResolveResultDetail
+	var selectedCountry CountryCode
 
 	maxLen := 0
-	selectedCountry := ""
 
 	for country, group := range countries {
 		if len(group) > maxLen {
@@ -251,12 +248,13 @@ func (t *Topographer) resolveIPMerge(ip net.IP, results []ResolveResultDetail) R
 		City:    t.resolveIPMergeCity(cityResults),
 	}
 
-	if country, err := t.countries.FindCountryByAlpha(selectedCountry); err == nil {
-		rv.Country.Alpha2Code = country.Alpha2
-		rv.Country.Alpha3Code = country.Alpha3
-		rv.Country.CommonName = country.Name.Common
-		rv.Country.OfficialName = country.Name.Official
-	}
+    if selectedCountry.Known() {
+        details := selectedCountry.Details()
+		rv.Country.Alpha2Code = details.Alpha2
+		rv.Country.Alpha3Code = details.Alpha3
+		rv.Country.CommonName = details.Name.Common
+		rv.Country.OfficialName = details.Name.Official
+    }
 
 	return rv
 }
@@ -292,7 +290,6 @@ func (t *Topographer) resolveIPMergeCity(results []*ResolveResultDetail) string 
 func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) (*Topographer, error) {
 	rv := &Topographer{
 		logger:    logger,
-		countries: gountries.New(),
 		providers: map[string]Provider{},
 	}
 

@@ -62,7 +62,7 @@ func (i ip2cProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 		return result, fmt.Errorf("ip2c cannot detect region: %s", body)
 	}
 
-	result.CountryCode = chunks[1]
+	result.CountryCode = topolib.Alpha2ToCountryCode(chunks[1])
 
 	return result, nil
 }

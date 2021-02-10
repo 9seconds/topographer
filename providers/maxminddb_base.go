@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/9seconds/topographer/topolib"
@@ -74,7 +73,7 @@ func (m *maxmindBase) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLo
 		return rv, fmt.Errorf("cannot lookup this ip address: %w", err)
 	}
 
-	rv.CountryCode = strings.ToUpper(record.Country.IsoCode)
+	rv.CountryCode = topolib.Alpha2ToCountryCode(record.Country.IsoCode)
 	rv.City = record.City.Names.En
 
 	return rv, nil

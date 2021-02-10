@@ -93,7 +93,7 @@ func (suite *MaxmindDBBaseTestSuite) TestLookupOk() {
 	result, err := suite.m.Lookup(context.Background(), net.ParseIP("81.2.69.142"))
 
 	suite.NoError(err)
-	suite.Equal("GB", result.CountryCode)
+	suite.Equal("GB", result.CountryCode.String())
 	suite.Equal("London", result.City)
 }
 

@@ -68,7 +68,7 @@ func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provide
 	}
 
 	result.City = jsonResponse.City
-	result.CountryCode = jsonResponse.Country
+	result.CountryCode = topolib.Alpha2ToCountryCode(jsonResponse.Country)
 
 	return result, nil
 }

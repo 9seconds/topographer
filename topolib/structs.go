@@ -19,12 +19,12 @@ func (r *ResolveResult) OK() bool {
 }
 
 type ResolveResultDetail struct {
-	ProviderName string `json:"provider_name"`
-	CountryCode  string `json:"country_code"`
-	City         string `json:"city"`
+	ProviderName string      `json:"provider_name"`
+	CountryCode  CountryCode `json:"country_code"`
+	City         string      `json:"city"`
 }
 
 type ProviderLookupResult struct {
-	CountryCode string
+	CountryCode CountryCode
 	City        string
 }

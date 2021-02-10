@@ -318,7 +318,7 @@ func (suite *HTTPHanderTestSuite) TestIncorrectMethod() {
 
 func (suite *HTTPHanderTestSuite) TestGetOk() {
 	result := topolib.ProviderLookupResult{
-		CountryCode: "RU",
+		CountryCode: topolib.Alpha2ToCountryCode("RU"),
 		City:        "Nizhniy Novgorod",
 	}
 	ip := net.ParseIP("192.168.1.1").To16()
@@ -363,7 +363,7 @@ func (suite *HTTPHanderTestSuite) TestPostOk() {
 		"/",
 		strings.NewReader(`{"ips": ["192.168.1.1"]}`))
 	result := topolib.ProviderLookupResult{
-		CountryCode: "RU",
+		CountryCode: topolib.Alpha2ToCountryCode("RU"),
 		City:        "Nizhniy Novgorod",
 	}
 	ip := net.ParseIP("192.168.1.1").To16()

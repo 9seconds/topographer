@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/9seconds/topographer/providers"
@@ -90,7 +89,7 @@ func (suite *MockedIPStackTestSuite) TestLookupOK() {
 	result, err := suite.prov.Lookup(context.Background(),
 		net.ParseIP("23.22.13.113"))
 
-	suite.Equal("RU", strings.ToUpper(result.CountryCode))
+	suite.Equal("RU", result.CountryCode.String())
 	suite.Equal("Moscow", result.City)
 	suite.NoError(err)
 }
@@ -113,7 +112,7 @@ func (suite *IntegrationIPStackTestSuite) TestLookup() {
 	result, err := suite.prov.Lookup(context.Background(),
 		net.ParseIP("23.22.13.113"))
 
-	suite.Equal("US", strings.ToUpper(result.CountryCode))
+	suite.Equal("US", result.CountryCode.String())
 	suite.NoError(err)
 }
 

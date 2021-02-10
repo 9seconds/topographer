@@ -152,7 +152,7 @@ func (suite *MockedIP2LocationTestSuite) TestReopen() {
 
     suite.NoError(err)
     suite.Equal("Amsterdam", res.City)
-    suite.Equal("NL", res.CountryCode)
+    suite.Equal("NL", res.CountryCode.String())
 
     suite.Error(suite.prov.Open(suite.tmpDir))
 
@@ -160,7 +160,7 @@ func (suite *MockedIP2LocationTestSuite) TestReopen() {
 
     suite.NoError(err)
     suite.Equal("Amsterdam", res.City)
-    suite.Equal("NL", res.CountryCode)
+    suite.Equal("NL", res.CountryCode.String())
 }
 
 type IntegrationIP2LocationTestSuite struct {
@@ -198,7 +198,7 @@ func (suite *IntegrationIP2LocationTestSuite) TestFull() {
 
 	suite.NoError(err)
 	suite.Equal("Amsterdam", res.City)
-	suite.Equal("NL", res.CountryCode)
+	suite.Equal("NL", res.CountryCode.String())
 }
 
 func TestIP2Location(t *testing.T) {

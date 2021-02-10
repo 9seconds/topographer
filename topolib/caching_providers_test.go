@@ -58,7 +58,10 @@ func (suite *CachingProviderTestSuite) SetupTest() {
 	suite.p = topolib.NewCachingProvider(suite.mockedProvider, 100, time.Minute)
 	call := suite.mockedProvider.On("Lookup", mock.Anything, mock.Anything)
 
-	call.Return(topolib.ProviderLookupResult{City: "Nizhny Novgorod", CountryCode: "RU"}, nil)
+	call.Return(topolib.ProviderLookupResult{
+		City:        "Nizhny Novgorod",
+		CountryCode: topolib.Alpha2ToCountryCode("RU")},
+		nil)
 	call.Once()
 }
 
@@ -72,7 +75,10 @@ func (suite *OfflineCachingProviderTestSuite) SetupTest() {
 	suite.p = topolib.NewCachingOfflineProvider(suite.mockedOfflineProvider, 100, time.Minute)
 	call := suite.mockedOfflineProvider.On("Lookup", mock.Anything, mock.Anything)
 
-	call.Return(topolib.ProviderLookupResult{City: "Nizhny Novgorod", CountryCode: "RU"}, nil)
+	call.Return(topolib.ProviderLookupResult{
+		City:        "Nizhny Novgorod",
+		CountryCode: topolib.Alpha2ToCountryCode("RU")},
+		nil)
 	call.Once()
 }
 

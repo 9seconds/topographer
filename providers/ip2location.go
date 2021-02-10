@@ -64,7 +64,7 @@ func (i *ip2locationProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Pr
 	}
 
 	result.City = resolved.City
-	result.CountryCode = resolved.Country_short
+	result.CountryCode = topolib.Alpha2ToCountryCode(resolved.Country_short)
 
 	return result, nil
 }

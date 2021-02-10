@@ -73,7 +73,7 @@ func (s *software77Provider) Lookup(ctx context.Context, ip net.IP) (topolib.Pro
 		return result, fmt.Errorf("cannot lookup: %w", err)
 	}
 
-	result.CountryCode = res
+	result.CountryCode = topolib.Alpha2ToCountryCode(res)
 
 	return result, nil
 }

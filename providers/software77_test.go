@@ -239,7 +239,7 @@ func (suite *MockedSoftware77TestSuite) TestLookupOk() {
 	res, err := suite.prov.Lookup(context.Background(), net.ParseIP("1.0.128.2"))
 
 	suite.NoError(err)
-	suite.Equal("TH", res.CountryCode)
+	suite.Equal("TH", res.CountryCode.String())
 }
 
 func (suite *MockedSoftware77TestSuite) TestLookupFaulyReopen() {
@@ -249,7 +249,7 @@ func (suite *MockedSoftware77TestSuite) TestLookupFaulyReopen() {
 	res, err := suite.prov.Lookup(context.Background(), net.ParseIP("1.0.128.2"))
 
 	suite.NoError(err)
-	suite.Equal("TH", res.CountryCode)
+	suite.Equal("TH", res.CountryCode.String())
 }
 
 type IntegrationSoftware77TestSuite struct {
@@ -281,7 +281,7 @@ func (suite *IntegrationSoftware77TestSuite) TestFull() {
 	res, err := suite.prov.Lookup(ctx, net.ParseIP("80.80.80.80"))
 
 	suite.NoError(err)
-	suite.Equal("NL", res.CountryCode)
+	suite.Equal("NL", res.CountryCode.String())
 }
 
 func TestSoftware77(t *testing.T) {
