@@ -219,6 +219,39 @@ func (suite *MockedSoftware77TestSuite) TestDownloadOk() {
 	suite.NoError(suite.prov.Download(ctx, suite.tmpDir))
 }
 
+func (suite *MockedSoftware77TestSuite) TestLookupNotReady() {
+	_, err := suite.prov.Lookup(context.Background(), net.ParseIP("80.80.80.80"))
+
+	suite.Error(err)
+}
+
+func (suite *MockedSoftware77TestSuite) TestLookupUnknownYet() {
+	suite.NoError(suite.prov.Open(suite.BaseDirectory()))
+
+	_, err := suite.prov.Lookup(context.Background(), net.ParseIP("80.80.80.80"))
+
+	suite.Error(err)
+}
+
+func (suite *MockedSoftware77TestSuite) TestLookupOk() {
+	suite.NoError(suite.prov.Open(suite.BaseDirectory()))
+
+	res, err := suite.prov.Lookup(context.Background(), net.ParseIP("1.0.128.2"))
+
+	suite.NoError(err)
+	suite.Equal("TH", res.CountryCode)
+}
+
+func (suite *MockedSoftware77TestSuite) TestLookupFaulyReopen() {
+	suite.NoError(suite.prov.Open(suite.BaseDirectory()))
+	suite.Error(suite.prov.Open(suite.tmpDir))
+
+	res, err := suite.prov.Lookup(context.Background(), net.ParseIP("1.0.128.2"))
+
+	suite.NoError(err)
+	suite.Equal("TH", res.CountryCode)
+}
+
 type IntegrationSoftware77TestSuite struct {
 	TmpDirTestSuite
 	OfflineProviderTestSuite
