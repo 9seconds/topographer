@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 
+	"github.com/9seconds/topographer/topolib"
 	"github.com/EvilSuperstars/go-cidrman"
 	"github.com/kentik/patricia"
 	"github.com/kentik/patricia/uint8_tree"
@@ -18,13 +18,11 @@ var (
 )
 
 type software77DB struct {
-	v4Tree            *uint8_tree.TreeV4
-	v6Tree            *uint8_tree.TreeV6
-	countryCodeMap    map[uint8]string
-	countryCodeMapInv map[string]uint8
+	v4Tree *uint8_tree.TreeV4
+	v6Tree *uint8_tree.TreeV6
 }
 
-func (s *software77DB) Lookup(addr net.IP) (string, error) {
+func (s *software77DB) Lookup(addr net.IP) (topolib.CountryCode, error) {
 	var (
 		ok    bool
 		value uint8
@@ -41,17 +39,17 @@ func (s *software77DB) Lookup(addr net.IP) (string, error) {
 
 	switch {
 	case err != nil:
-		return "", fmt.Errorf("cannot resolve ip address: %w", err)
+		return 0, fmt.Errorf("cannot resolve ip address: %w", err)
 	case !ok:
-		return "", errSoftware77DBNotFound
+		return 0, errSoftware77DBNotFound
 	}
 
-	return s.countryCodeMap[value], nil
+	return topolib.CountryCode(value), nil
 }
 
 func (s *software77DB) AddIPv4Range(start, end, countryCode string) error {
-	countryCode = s.normalizeCountryCode(countryCode)
-	if countryCode == "" {
+    cc := topolib.Alpha2ToCountryCode(countryCode)
+	if !cc.Known() {
 		return nil
 	}
 
@@ -76,7 +74,7 @@ func (s *software77DB) AddIPv4Range(start, end, countryCode string) error {
 	}
 
 	for _, ipnet := range ipnets {
-		if err := s.add(ipnet, countryCode); err != nil {
+		if err := s.add(ipnet, cc); err != nil {
 			return err
 		}
 	}
@@ -85,8 +83,8 @@ func (s *software77DB) AddIPv4Range(start, end, countryCode string) error {
 }
 
 func (s *software77DB) AddIPv6CIDR(cidr, countryCode string) error {
-	countryCode = s.normalizeCountryCode(countryCode)
-	if countryCode == "" {
+    cc := topolib.Alpha2ToCountryCode(countryCode)
+	if !cc.Known() {
 		return nil
 	}
 
@@ -95,23 +93,16 @@ func (s *software77DB) AddIPv6CIDR(cidr, countryCode string) error {
 		return fmt.Errorf("cannot parse cidr: %w", err)
 	}
 
-	return s.add(ipnet, countryCode)
+	return s.add(ipnet, cc)
 }
 
-func (s *software77DB) add(ipnet *net.IPNet, countryCode string) error {
-	intCountryCode, ok := s.countryCodeMapInv[countryCode]
-	if !ok {
-		intCountryCode = uint8(len(s.countryCodeMap))
-		s.countryCodeMapInv[countryCode] = intCountryCode
-		s.countryCodeMap[intCountryCode] = countryCode
-	}
-
+func (s *software77DB) add(ipnet *net.IPNet, countryCode topolib.CountryCode) error {
 	addrLength, _ := ipnet.Mask.Size()
 	addrBytes := ipnet.IP.To4()
 
 	if addrBytes != nil {
 		_, _, err := s.v4Tree.Add(patricia.NewIPv4AddressFromBytes(addrBytes, uint(addrLength)),
-			intCountryCode,
+			uint8(countryCode),
 			nil)
 
 		return err
@@ -119,36 +110,16 @@ func (s *software77DB) add(ipnet *net.IPNet, countryCode string) error {
 		addrBytes = ipnet.IP.To16()
 
 		_, _, err := s.v6Tree.Add(patricia.NewIPv6Address(addrBytes, uint(addrLength)),
-			intCountryCode,
+			uint8(countryCode),
 			nil)
 
 		return err
 	}
 }
 
-func (s *software77DB) normalizeCountryCode(countryCode string) string {
-	countryCode = strings.ToUpper(countryCode)
-
-    // please read comments in downloaded CSV files
-	switch countryCode {
-	case "ZZ", "AP", "EU":
-		return ""
-	case "YU":
-		return "CS"
-	case "FX":
-		return "FR"
-	case "UK":
-		return "GB"
-	default:
-		return countryCode
-	}
-}
-
 func newSoftware77DB() *software77DB {
 	return &software77DB{
-		v4Tree:            uint8_tree.NewTreeV4(),
-		v6Tree:            uint8_tree.NewTreeV6(),
-		countryCodeMap:    map[uint8]string{},
-		countryCodeMapInv: map[string]uint8{},
+		v4Tree: uint8_tree.NewTreeV4(),
+		v6Tree: uint8_tree.NewTreeV6(),
 	}
 }
