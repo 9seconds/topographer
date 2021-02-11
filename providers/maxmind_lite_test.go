@@ -36,7 +36,7 @@ func (suite *MaxmindLiteTestSuite) SetupTest() {
 	suite.TmpDirTestSuite.SetupTest()
 	suite.OfflineProviderTestSuite.SetupTest()
 
-	suite.prov = providers.NewMaxmindLite(suite.http, time.Minute, suite.tmpDir, "apikey")
+	suite.prov, _ = providers.NewMaxmindLite(suite.http, time.Minute, suite.tmpDir, "apikey")
 }
 
 func (suite *MaxmindLiteTestSuite) TearDownTest() {
@@ -238,7 +238,7 @@ func (suite *IntegrationMaxmindLiteTestSuite) TearDownTest() {
 }
 
 func (suite *IntegrationMaxmindLiteTestSuite) TestFull() {
-	prov := providers.NewMaxmindLite(suite.http, time.Minute, "", os.Getenv(maxmindEnvApiKey))
+	prov, _ := providers.NewMaxmindLite(suite.http, time.Minute, "", os.Getenv(maxmindEnvApiKey))
 
 	suite.NoError(prov.Download(context.Background(), suite.tmpDir))
 	suite.NoError(prov.Open(suite.tmpDir))

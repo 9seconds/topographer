@@ -203,11 +203,15 @@ func (m *maxmindLiteProvider) buildURL(suffix string) string {
 func NewMaxmindLite(httpClient topolib.HTTPClient,
 	updateEvery time.Duration,
 	baseDirectory string,
-	licenseKey string) topolib.OfflineProvider {
+	licenseKey string) (topolib.OfflineProvider, error) {
+	if licenseKey == "" {
+		return nil, ErrAuthTokenIsRequired
+	}
+
 	return &maxmindLiteProvider{
 		httpClient:    httpClient,
 		updateEvery:   updateEvery,
 		baseDirectory: filepath.Clean(baseDirectory),
 		licenseKey:    licenseKey,
-	}
+	}, nil
 }
