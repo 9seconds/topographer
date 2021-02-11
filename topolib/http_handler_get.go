@@ -3,13 +3,10 @@ package topolib
 import (
 	"net"
 	"net/http"
+	"sort"
 )
 
-type handleGetResponse struct {
-	Result ResolveResult `json:"result"`
-}
-
-func (h httpHandler) handleGet(w http.ResponseWriter, req *http.Request) {
+func (h httpHandler) handleGetResolve(w http.ResponseWriter, req *http.Request) {
 	host, _, err := net.SplitHostPort(req.RemoteAddr)
 	if err != nil {
 		h.sendError(w, err, "Cannot detect your IP address", 0)
@@ -31,15 +28,37 @@ func (h httpHandler) handleGet(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-    if !resolved.OK() {
-        h.sendError(w, nil, "Cannot resolve IP address yet", http.StatusServiceUnavailable)
+	if !resolved.OK() {
+		h.sendError(w, nil, "Cannot resolve IP address yet", http.StatusServiceUnavailable)
 
-        return
-    }
+		return
+	}
 
-	respEnvelope := handleGetResponse{
+	response := struct {
+		Result ResolveResult `json:"result"`
+	}{
 		Result: resolved,
 	}
 
-	h.encodeJSON(w, respEnvelope)
+	h.encodeJSON(w, response)
+}
+
+func (h httpHandler) handleGetStats(w http.ResponseWriter, req *http.Request) {
+	stats := make([]*UsageStats, 0, len(h.topo.providerStats))
+
+	for _, v := range h.topo.providerStats {
+		stats = append(stats, v)
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Name < stats[j].Name
+	})
+
+	response := struct {
+		Results []*UsageStats `json:"results"`
+	}{
+		Results: stats,
+	}
+
+	h.encodeJSON(w, response)
 }

@@ -25,10 +25,11 @@ var (
 )
 
 type fsUpdater struct {
-	ctx      context.Context
-	cancel   context.CancelFunc
-	logger   Logger
-	provider OfflineProvider
+	ctx        context.Context
+	cancel     context.CancelFunc
+	logger     Logger
+	provider   OfflineProvider
+	usageStats *UsageStats
 }
 
 func (f *fsUpdater) Name() string {
@@ -108,6 +109,7 @@ func (f *fsUpdater) bgUpdate() {
 	if err := f.doUpdate(); err != nil {
 		f.logger.UpdateError(f.Name(), err)
 	} else {
+        f.usageStats.Updated()
 		f.logger.UpdateInfo(f.Name(), "db has been updated")
 	}
 

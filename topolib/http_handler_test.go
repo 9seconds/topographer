@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	jsonSchemaGET = func() *jsonschema.Schema {
+	jsonSchemaGETResolve = func() *jsonschema.Schema {
 		data := `{
           "type": "object",
           "required": [
@@ -129,6 +129,61 @@ var (
                         "type": "string"
                       }
                     }
+                  }
+                }
+              }
+            }
+          }
+        }`
+
+		rv := &jsonschema.Schema{}
+		if err := json.Unmarshal([]byte(data), rv); err != nil {
+			panic(err)
+		}
+
+		return rv
+	}()
+
+	jsonSchemaGETStats = func() *jsonschema.Schema {
+		data := `{
+          "type": "object",
+          "required": [
+            "results"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "results": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "last_updated",
+                  "last_used",
+                  "success_count",
+                  "failure_count"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "last_used": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "last_updated": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "success_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "failure_count": {
+                    "type": "integer",
+                    "minimum": 0
                   }
                 }
               }
@@ -331,7 +386,8 @@ func (suite *HTTPHanderTestSuite) TestGetOk() {
 
 	suite.Equal(http.StatusOK, suite.resp.Code)
 
-	errs, err := jsonSchemaGET.ValidateBytes(context.Background(), suite.resp.Body.Bytes())
+	errs, err := jsonSchemaGETResolve.ValidateBytes(context.Background(),
+		suite.resp.Body.Bytes())
 
 	suite.NoError(err)
 	suite.Empty(errs)
@@ -339,6 +395,39 @@ func (suite *HTTPHanderTestSuite) TestGetOk() {
 	suite.Contains(suite.resp.Body.String(), "RU")
 	suite.Contains(suite.resp.Body.String(), "RUS")
 	suite.Contains(suite.resp.Body.String(), "Nizhniy Novgorod")
+}
+
+func (suite *HTTPHanderTestSuite) TestGetUnkownPath() {
+	req := httptest.NewRequest("GET", "/lalala", nil)
+	req.RemoteAddr = "192.168.1.1:5678"
+
+	suite.h.ServeHTTP(suite.resp, req)
+
+	suite.Equal(http.StatusNotFound, suite.resp.Code)
+}
+
+func (suite *HTTPHanderTestSuite) TestGetStats() {
+	req := httptest.NewRequest("GET", "/stats/", nil)
+	req.RemoteAddr = "192.168.1.1:5678"
+
+	suite.h.ServeHTTP(suite.resp, req)
+
+	suite.Equal(http.StatusOK, suite.resp.Code)
+
+	errs, err := jsonSchemaGETStats.ValidateBytes(context.Background(),
+		suite.resp.Body.Bytes())
+
+	suite.NoError(err)
+	suite.Empty(errs)
+}
+
+func (suite *HTTPHanderTestSuite) TestPostUnknownPath() {
+	req := httptest.NewRequest("POST", "/lalala", nil)
+	req.RemoteAddr = "192.168.1.1:5678"
+
+	suite.h.ServeHTTP(suite.resp, req)
+
+	suite.Equal(http.StatusNotFound, suite.resp.Code)
 }
 
 func (suite *HTTPHanderTestSuite) TestPostUnsupportedMediaType() {

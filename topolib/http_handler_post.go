@@ -56,15 +56,6 @@ var handlePostRequestJSONSchema = func() *jsonschema.Schema {
 	return rv
 }()
 
-type handlePostRequest struct {
-	IPs       []net.IP `json:"ips"`
-	Providers []string `json:"providers"`
-}
-
-type handlePostResponse struct {
-	Results []ResolveResult `json:"results"`
-}
-
 func (h httpHandler) handlePost(w http.ResponseWriter, req *http.Request) {
 	if !strings.Contains(req.Header.Get("Content-Type"), "application/json") {
 		h.sendError(w, nil, "Incorrect content type", http.StatusUnsupportedMediaType)
@@ -95,8 +86,12 @@ func (h httpHandler) handlePost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	parsedRequest := &handlePostRequest{}
-	if err := json.Unmarshal(bodyBytes, parsedRequest); err != nil {
+	parsedRequest := struct {
+		IPs       []net.IP `json:"ips"`
+		Providers []string `json:"providers"`
+	}{}
+
+	if err := json.Unmarshal(bodyBytes, &parsedRequest); err != nil {
 		h.sendError(w, err, "Cannot parse request JSON", http.StatusBadRequest)
 
 		return
@@ -119,11 +114,13 @@ func (h httpHandler) handlePost(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	respEnvelope := handlePostResponse{
+	response := struct {
+		Results []ResolveResult `json:"results"`
+	}{
 		Results: resolved,
 	}
 
-	h.encodeJSON(w, respEnvelope)
+	h.encodeJSON(w, response)
 }
 
 func handlePostUniqueIPs(ips []net.IP) []net.IP {

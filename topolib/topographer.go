@@ -20,12 +20,13 @@ const (
 )
 
 type Topographer struct {
-	logger     Logger
-	providers  map[string]Provider
-	rwmutex    sync.RWMutex
-	closeOnce  sync.Once
-	workerPool *ants.PoolWithFunc
-	closed     bool
+	logger        Logger
+	providers     map[string]Provider
+	providerStats map[string]*UsageStats
+	rwmutex       sync.RWMutex
+	closeOnce     sync.Once
+	workerPool    *ants.PoolWithFunc
+	closed        bool
 }
 
 func (t *Topographer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -195,12 +196,15 @@ func (t *Topographer) resolveIPLookup(ctx context.Context,
 	detail := ResolveResultDetail{
 		ProviderName: provider.Name(),
 	}
+	stat := t.providerStats[provider.Name()]
 
 	if res, err := provider.Lookup(ctx, ip); err != nil {
+		stat.Used(err)
 		t.logger.LookupError(ip, provider.Name(), err)
 	} else {
 		detail.City = res.City
 		detail.CountryCode = res.CountryCode
+		stat.Used(nil)
 	}
 
 	select {
@@ -248,13 +252,13 @@ func (t *Topographer) resolveIPMerge(ip net.IP, results []ResolveResultDetail) R
 		City:    t.resolveIPMergeCity(cityResults),
 	}
 
-    if selectedCountry.Known() {
-        details := selectedCountry.Details()
+	if selectedCountry.Known() {
+		details := selectedCountry.Details()
 		rv.Country.Alpha2Code = details.Alpha2
 		rv.Country.Alpha3Code = details.Alpha3
 		rv.Country.CommonName = details.Name.Common
 		rv.Country.OfficialName = details.Name.Official
-    }
+	}
 
 	return rv
 }
@@ -289,18 +293,25 @@ func (t *Topographer) resolveIPMergeCity(results []*ResolveResultDetail) string 
 
 func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) (*Topographer, error) {
 	rv := &Topographer{
-		logger:    logger,
-		providers: map[string]Provider{},
+		logger:        logger,
+		providers:     map[string]Provider{},
+		providerStats: map[string]*UsageStats{},
 	}
 
 	for _, v := range providers {
+		stat := &UsageStats{
+			Name: v.Name(),
+		}
+		rv.providerStats[v.Name()] = stat
+
 		if vv, ok := v.(OfflineProvider); ok {
 			ctx, cancel := context.WithCancel(context.Background())
 			updater := &fsUpdater{
-				ctx:      ctx,
-				cancel:   cancel,
-				logger:   logger,
-				provider: vv,
+				ctx:        ctx,
+				cancel:     cancel,
+				logger:     logger,
+				provider:   vv,
+				usageStats: stat,
 			}
 
 			if err := updater.Start(); err != nil {

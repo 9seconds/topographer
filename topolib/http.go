@@ -3,6 +3,7 @@ package topolib
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 type httpHandler struct {
@@ -10,11 +11,25 @@ type httpHandler struct {
 }
 
 func (h httpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	path := strings.TrimSuffix(req.URL.Path, "/")
+
 	switch req.Method {
 	case http.MethodGet, http.MethodHead:
-		h.handleGet(w, req)
+		switch path {
+		case "":
+			h.handleGetResolve(w, req)
+		case "/stats":
+			h.handleGetStats(w, req)
+		default:
+			h.sendError(w, nil, "URL not found", http.StatusNotFound)
+		}
 	case http.MethodPost:
-		h.handlePost(w, req)
+		switch path {
+		case "":
+			h.handlePost(w, req)
+		default:
+			h.sendError(w, nil, "URL not found", http.StatusNotFound)
+		}
 	default:
 		h.sendError(w, nil, "Method is not allowed", http.StatusMethodNotAllowed)
 	}

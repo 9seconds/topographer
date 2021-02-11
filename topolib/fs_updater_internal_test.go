@@ -30,10 +30,11 @@ func (suite *FsUpdaterTestSuite) SetupTest() {
 	suite.providerMock = &OfflineProviderMock{}
 	suite.loggerMock = &LoggerMock{}
 	suite.u = &fsUpdater{
-		ctx:      ctx,
-		cancel:   cancel,
-		logger:   suite.loggerMock,
-		provider: suite.providerMock,
+		ctx:        ctx,
+		cancel:     cancel,
+		logger:     suite.loggerMock,
+		provider:   suite.providerMock,
+		usageStats: &UsageStats{},
 	}
 
 	baseDir, err := ioutil.TempDir("", "fs_updater_test_suite_")
