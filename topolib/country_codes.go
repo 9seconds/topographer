@@ -2,7 +2,6 @@ package topolib
 
 import (
 	"bytes"
-	"fmt"
 	"strings"
 
 	"github.com/pariz/gountries"
@@ -26,16 +25,6 @@ func (c CountryCode) MarshalJSON() ([]byte, error) {
 	buf.WriteByte('"')
 
 	return buf.Bytes(), nil
-}
-
-func (c *CountryCode) UnmarshalJSON(data []byte) error {
-	if cc, ok := countryCodeMapString2CC[string(data)]; ok {
-		*c = cc
-
-		return nil
-	}
-
-	return fmt.Errorf("incorrect country code %v", data)
 }
 
 func (c CountryCode) String() string {
@@ -71,6 +60,12 @@ func NormalizeAlpha2Code(alpha2 string) string {
 
 func Alpha2ToCountryCode(alpha2 string) CountryCode {
 	return countryCodeMapString2CC[NormalizeAlpha2Code(alpha2)]
+}
+
+func Alpha3ToCountryCode(alpha3 string) CountryCode {
+	alpha3 = strings.ToUpper(alpha3)
+
+	return Alpha2ToCountryCode(countryCodeQuery.Alpha3ToAlpha2[alpha3])
 }
 
 func init() {

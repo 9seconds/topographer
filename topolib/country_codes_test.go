@@ -26,6 +26,11 @@ func (suite *CountryCodeTestSuite) TestAlpha2ToCountryCode() {
 	suite.Equal("RU", topolib.Alpha2ToCountryCode("ru").String())
 }
 
+func (suite *CountryCodeTestSuite) TestAlpha3ToCountryCode() {
+	suite.Equal(topolib.CountryCode(0), topolib.Alpha3ToCountryCode("zz"))
+	suite.Equal("RU", topolib.Alpha3ToCountryCode("rus").String())
+}
+
 func (suite *CountryCodeTestSuite) TestDetails() {
 	v := topolib.Alpha2ToCountryCode("ru")
 
