@@ -39,6 +39,10 @@ func (t *Topographer) ResolveAll(ctx context.Context,
 	t.rwmutex.RLock()
 	defer t.rwmutex.RUnlock()
 
+	ctx, cancel := context.WithCancel(ctx)
+
+	defer cancel()
+
 	if t.closed {
 		return nil, ErrTopographerShutdown
 	}
@@ -87,6 +91,10 @@ func (t *Topographer) Resolve(ctx context.Context,
 	providers []string) (ResolveResult, error) {
 	t.rwmutex.RLock()
 	defer t.rwmutex.RUnlock()
+
+	ctx, cancel := context.WithCancel(ctx)
+
+	defer cancel()
 
 	ip = ip.To16()
 	rv := ResolveResult{

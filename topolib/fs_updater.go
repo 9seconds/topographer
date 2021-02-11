@@ -16,8 +16,31 @@ import (
 )
 
 const (
+	// FsTargetDirPrefix is a prefix which is used to mark 'active'
+	// directory with databases for the provider. All other
+	// directories/files are ok to be removed at any given moment in
+	// time.
+	//
+	// If there are many target directories, topographer uses a random
+	// one.
+	//
+	// Suffix is generated based on a contents of the directory.
+	// You can think about simplified merkle tree hash here.
 	FsTargetDirPrefix = "target_"
-	FsTempDirPrefix   = "tmp_"
+
+	// FsTempDirPrefix defines a prefix for temporary directories populated
+	// during update of the offline databases.
+	//
+	// It works in a following way:
+	//    1. Each provider has its own base directory
+	//    2. When time comes, topographer creates a new temporary
+	//       and passes it to provider.
+	//    3. Provider does some nasty things there: downloads files
+	//       creates something and prepares a directory structure
+	//       applicable for Open method
+	//    4. Old target directory is removed and temporary one
+	//       is renamed into a new target one.
+	FsTempDirPrefix = "tmp_"
 )
 
 var (
@@ -109,7 +132,7 @@ func (f *fsUpdater) bgUpdate() {
 	if err := f.doUpdate(); err != nil {
 		f.logger.UpdateError(f.Name(), err)
 	} else {
-        f.usageStats.Updated()
+		f.usageStats.Updated()
 		f.logger.UpdateInfo(f.Name(), "db has been updated")
 	}
 

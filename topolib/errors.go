@@ -7,8 +7,13 @@ import (
 )
 
 var (
+	// ErrTopographerShutdown returns if you've tried to resolve ips via
+	// topographer but instance was shutdown.
 	ErrTopographerShutdown = errors.New("topographer instance was shutdown")
-	ErrContextIsClosed     = errors.New("context is closed")
+
+	// ErrContextIsClosed returns if context is closed during execution
+	// of the method.
+	ErrContextIsClosed = errors.New("context is closed")
 )
 
 type jsonHTTPError struct {

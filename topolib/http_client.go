@@ -62,6 +62,11 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 	return resp.(*http.Response), err
 }
 
+// NewHTTPClient prepares a new HTTP client, wraps it with rate limiter,
+// circuit breaker, sets a user agent etc.
+//
+// Please see https://pkg.go.dev/golang.org/x/time/rate to get a meaning
+// of rate limiter parameters.
 func NewHTTPClient(client *http.Client,
 	userAgent string,
 	rateLimiterInterval time.Duration,

@@ -42,6 +42,9 @@ func (c cachingOfflineProvider) Lookup(ctx context.Context, ip net.IP) (Provider
     return c.cachingProvider.Lookup(ctx, ip)
 }
 
+// NewCachingProvider returns a wrapper for a given provider. Caching
+// provider caches responses of Lookup calls in some LRU cache with TTL
+// timestamp.
 func NewCachingProvider(provider Provider, itemsCount uint, ttl time.Duration) Provider {
 	cacheConfig := &ristretto.Config{
 		MaxCost:     int64(itemsCount),
@@ -62,6 +65,8 @@ func NewCachingProvider(provider Provider, itemsCount uint, ttl time.Duration) P
 	}
 }
 
+// NewCachingOfflineProvider is a version of caching provider for
+// OfflineProvider.
 func NewCachingOfflineProvider(provider OfflineProvider, itemsCount uint, ttl time.Duration) OfflineProvider {
     return cachingOfflineProvider{
         OfflineProvider: provider,

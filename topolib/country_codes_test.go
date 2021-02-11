@@ -16,6 +16,7 @@ func (suite *CountryCodeTestSuite) TestNormalizeAlpha2Code() {
 	suite.Equal("", topolib.NormalizeAlpha2Code("zz"))
 	suite.Equal("", topolib.NormalizeAlpha2Code("Eu"))
 	suite.Equal("", topolib.NormalizeAlpha2Code("ap"))
+	suite.Equal("", topolib.NormalizeAlpha2Code("RUS"))
 	suite.Equal("FR", topolib.NormalizeAlpha2Code("FX"))
 	suite.Equal("FR", topolib.NormalizeAlpha2Code("FR"))
 	suite.Equal("GB", topolib.NormalizeAlpha2Code("UK"))
