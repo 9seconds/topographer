@@ -119,6 +119,20 @@ func (t *Topographer) Resolve(ctx context.Context,
 	return rv, nil
 }
 
+func (t *Topographer) UsageStats() []*UsageStats {
+	stats := make([]*UsageStats, 0, len(t.providerStats))
+
+	for _, v := range t.providerStats {
+		stats = append(stats, v)
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Name < stats[j].Name
+	})
+
+	return stats
+}
+
 func (t *Topographer) getProvidersToUse(names []string) ([]Provider, error) {
 	rv := make([]Provider, 0, len(names))
 

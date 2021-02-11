@@ -3,7 +3,6 @@ package topolib
 import (
 	"net"
 	"net/http"
-	"sort"
 )
 
 func (h httpHandler) handleGetResolve(w http.ResponseWriter, req *http.Request) {
@@ -44,20 +43,10 @@ func (h httpHandler) handleGetResolve(w http.ResponseWriter, req *http.Request) 
 }
 
 func (h httpHandler) handleGetStats(w http.ResponseWriter, req *http.Request) {
-	stats := make([]*UsageStats, 0, len(h.topo.providerStats))
-
-	for _, v := range h.topo.providerStats {
-		stats = append(stats, v)
-	}
-
-	sort.Slice(stats, func(i, j int) bool {
-		return stats[i].Name < stats[j].Name
-	})
-
 	response := struct {
 		Results []*UsageStats `json:"results"`
 	}{
-		Results: stats,
+		Results: h.topo.UsageStats(),
 	}
 
 	h.encodeJSON(w, response)
