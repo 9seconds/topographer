@@ -14,11 +14,26 @@ import (
 )
 
 const (
+    // A size of the worker pool to use in Topographer.
+    //
+    // Topographer is using worker pool to access providers. It is
+    // done to prevent overloading and overusing of them especially if
+    // provider accesses some external resource.
+    //
+    // A worker task is a single IP lookup for _all_ providers. So, if
+    // you have a worker pool size of 100, you can concurrenly resolve
+    // only 100 IPs. This is not quite a granular but useful on practice
+    // if you plan capacity.
+    //
+    // Usually you want to have this number of workers in pool.
 	DefaultWorkerPoolSize = 4096
 
 	workerPoolExpireTime = time.Minute
 )
 
+// Topographer is a main entity of topolib. It is responsible for
+// provider management, background updates and IP lookups. It also
+// contains an instance of worker pool to use.
 type Topographer struct {
 	logger        Logger
 	providers     map[string]Provider
@@ -29,10 +44,16 @@ type Topographer struct {
 	closed        bool
 }
 
+// ServeHTTP is to conform http.Handler interface.
 func (t *Topographer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	httpHandler{t}.ServeHTTP(w, req)
 }
 
+// ResolveAll concurrently resolves IP geolocation of the batch of ip
+// addresses.
+//
+// 'providers' argument contains names of the providers to use. If you
+// want to use all providers, simply pass nil here.
 func (t *Topographer) ResolveAll(ctx context.Context,
 	ips []net.IP,
 	providers []string) ([]ResolveResult, error) {
@@ -86,6 +107,10 @@ func (t *Topographer) ResolveAll(ctx context.Context,
 	return rv, nil
 }
 
+// Resolve geolocation of the single IP.
+//
+// 'providers' argument contains names of the providers to use. If you
+// want to use all providers, simply pass nil here.
 func (t *Topographer) Resolve(ctx context.Context,
 	ip net.IP,
 	providers []string) (ResolveResult, error) {
@@ -127,6 +152,7 @@ func (t *Topographer) Resolve(ctx context.Context,
 	return rv, nil
 }
 
+// UsageStats returns an array with stats.
 func (t *Topographer) UsageStats() []*UsageStats {
 	stats := make([]*UsageStats, 0, len(t.providerStats))
 
@@ -313,6 +339,7 @@ func (t *Topographer) resolveIPMergeCity(results []*ResolveResultDetail) string 
 	return cityName
 }
 
+// NewTopographer creates a new instance of topographer.
 func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) (*Topographer, error) {
 	rv := &Topographer{
 		logger:        logger,

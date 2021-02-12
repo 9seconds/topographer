@@ -13,7 +13,7 @@ import (
 // update (sucessful, only for offline providers); counters for a number
 // of success and failed lookups.
 type UsageStats struct {
-    // A name of the provider.
+	// A name of the provider.
 	Name string
 
 	mutex        sync.Mutex
@@ -21,6 +21,26 @@ type UsageStats struct {
 	lastUsed     time.Time
 	successCount uint64
 	failureCount uint64
+}
+
+// LastUpdated returns a timestamp when provider was updated last time.
+func (u *UsageStats) LastUpdated() time.Time {
+	return u.lastUpdated
+}
+
+// LastUpdated returns a timestamp when provider was used last time.
+func (u *UsageStats) LastUsed() time.Time {
+	return u.lastUsed
+}
+
+// Successes returns a count of successful lookups.
+func (u *UsageStats) Successes() uint64 {
+	return u.successCount
+}
+
+// Failures returns a count of failed lookups.
+func (u *UsageStats) Failures() uint64 {
+	return u.failureCount
 }
 
 func (u *UsageStats) notifyUsed(err error) {

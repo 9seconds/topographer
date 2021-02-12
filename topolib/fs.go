@@ -27,16 +27,6 @@ const (
 
 	// FsTempDirPrefix defines a prefix for temporary directories populated
 	// during update of the offline databases.
-	//
-	// It works in a following way:
-	//    1. Each provider has its own base directory
-	//    2. When time comes, topographer creates a new temporary
-	//       and passes it to provider.
-	//    3. Provider does some nasty things there: downloads files
-	//       creates something and prepares a directory structure
-	//       applicable for Open method
-	//    4. Old target directory is removed and temporary one
-	//       is renamed into a new target one.
 	FsTempDirPrefix = "tmp_"
 )
 
