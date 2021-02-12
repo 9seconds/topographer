@@ -14,18 +14,18 @@ import (
 )
 
 const (
-    // A size of the worker pool to use in Topographer.
-    //
-    // Topographer is using worker pool to access providers. It is
-    // done to prevent overloading and overusing of them especially if
-    // provider accesses some external resource.
-    //
-    // A worker task is a single IP lookup for _all_ providers. So, if
-    // you have a worker pool size of 100, you can concurrenly resolve
-    // only 100 IPs. This is not quite a granular but useful on practice
-    // if you plan capacity.
-    //
-    // Usually you want to have this number of workers in pool.
+	// A size of the worker pool to use in Topographer.
+	//
+	// Topographer is using worker pool to access providers. It is
+	// done to prevent overloading and overusing of them especially if
+	// provider accesses some external resource.
+	//
+	// A worker task is a single IP lookup for _all_ providers. So, if
+	// you have a worker pool size of 100, you can concurrenly resolve
+	// only 100 IPs. This is not quite a granular but useful on practice
+	// if you plan capacity.
+	//
+	// Usually you want to have this number of workers in pool.
 	DefaultWorkerPoolSize = 4096
 
 	workerPoolExpireTime = time.Minute
@@ -347,6 +347,14 @@ func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) (*T
 		providerStats: map[string]*UsageStats{},
 	}
 
+	poolSize := workerPoolSize
+	if poolSize <= 0 {
+		poolSize = DefaultWorkerPoolSize
+	}
+
+	rv.workerPool, _ = ants.NewPoolWithFunc(poolSize, rv.resolveIP,
+		ants.WithExpiryDuration(workerPoolExpireTime))
+
 	for _, v := range providers {
 		stat := &UsageStats{
 			Name: v.Name(),
@@ -366,14 +374,6 @@ func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) (*T
 
 		rv.providers[v.Name()] = v
 	}
-
-	poolSize := workerPoolSize
-	if poolSize <= 0 {
-		poolSize = DefaultWorkerPoolSize
-	}
-
-	rv.workerPool, _ = ants.NewPoolWithFunc(poolSize, rv.resolveIP,
-		ants.WithExpiryDuration(workerPoolExpireTime))
 
 	return rv, nil
 }

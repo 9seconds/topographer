@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	NameIP2Location = "ip2location"
+	NameIP2Location = "ip2location_lite"
 
 	ip2locationLiteDB   = "DB3LITEBINIPV6"
 	ip2locationFileName = "database.bin"

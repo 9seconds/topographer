@@ -39,12 +39,6 @@ func (f *fsUpdater) Start() error {
 		return fmt.Errorf("cannot make full cleanup: %w", err)
 	}
 
-	if err := f.doUpdate(); err != nil {
-		return fmt.Errorf("cannot fetch databases: %w", err)
-	}
-
-	f.logger.UpdateInfo(f.Name())
-
 	go f.runBgUpdate()
 
 	return nil
@@ -57,7 +51,7 @@ func (f *fsUpdater) Shutdown() {
 
 func (f *fsUpdater) runBgUpdate() {
 	_, modTime, _ := f.fs.GetTargetDir()
-	duration := time.Since(modTime)
+	duration := f.UpdateEvery() - time.Since(modTime)
 
 	if duration > 0 {
 		timer := time.NewTimer(duration)

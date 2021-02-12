@@ -3,6 +3,7 @@ package topolib
 import (
 	"context"
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -45,7 +46,7 @@ func (suite *FsUpdaterTestSuite) SetupTest() {
 	suite.providerMock.On("Shutdown")
 	suite.providerMock.On("Name").Return("providerMock").Maybe()
 	suite.providerMock.On("BaseDirectory").Return(baseDir).Maybe()
-	suite.providerMock.On("UpdateEvery").Return(time.Minute).Maybe()
+	suite.providerMock.On("UpdateEvery").Return(time.Second).Maybe()
 	suite.loggerMock.On("UpdateError", mock.Anything, mock.Anything).Maybe()
 	suite.loggerMock.On("UpdateInfo", mock.Anything, mock.Anything).Maybe()
 }
@@ -77,7 +78,9 @@ func (suite *FsUpdaterTestSuite) TestInitialCleaning() {
 	suite.providerMock.On("Open", targetDir).Return(errToCheck)
 	suite.providerMock.On("Download", mock.Anything, mock.Anything).Return(errToCheck)
 
-	suite.Error(suite.u.Start())
+	suite.NoError(suite.u.Start())
+
+	time.Sleep(200 * time.Millisecond)
 
 	infos, err := ioutil.ReadDir(suite.baseDir)
 
@@ -104,11 +107,12 @@ func (suite *FsUpdaterTestSuite) TestOk() {
 			[]byte("OK"),
 			0644))
 	})
+	suite.providerMock.On("Open", targetDir).Return(io.EOF)
 	suite.providerMock.On("Open", mock.Anything).Return(nil)
 
 	suite.NoError(suite.u.Start())
 
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(time.Second + 200*time.Millisecond)
 
 	infos, err := ioutil.ReadDir(suite.baseDir)
 
