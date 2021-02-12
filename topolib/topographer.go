@@ -221,12 +221,12 @@ func (t *Topographer) resolveIPLookup(ctx context.Context,
 	stat := t.providerStats[provider.Name()]
 
 	if res, err := provider.Lookup(ctx, ip); err != nil {
-		stat.Used(err)
+		stat.notifyUsed(err)
 		t.logger.LookupError(ip, provider.Name(), err)
 	} else {
 		detail.City = res.City
 		detail.CountryCode = res.CountryCode
-		stat.Used(nil)
+		stat.notifyUsed(nil)
 	}
 
 	select {

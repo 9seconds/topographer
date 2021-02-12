@@ -133,7 +133,7 @@ func (f *fsUpdater) doUpdate() error {
 	}
 
 	f.fs.Cleanup(newTargetDir) // nolint: errcheck
-	f.stats.Updated()
+	f.stats.notifyUpdated()
 
 	return nil
 }

@@ -1,4 +1,4 @@
-package topolib_test
+package topolib
 
 import (
 	"encoding/json"
@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/9seconds/topographer/topolib"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -21,21 +20,21 @@ type usageStatsJSON struct {
 type UsageStatsTestSuite struct {
 	suite.Suite
 
-	u *topolib.UsageStats
+	u *UsageStats
 }
 
 func (suite *UsageStatsTestSuite) SetupTest() {
-	suite.u = &topolib.UsageStats{
+	suite.u = &UsageStats{
 		Name: "test",
 	}
 }
 
 func (suite *UsageStatsTestSuite) VerifyTime(expected time.Time, actual int64) {
-    if expected.IsZero() {
-        suite.EqualValues(0, actual)
-    } else {
+	if expected.IsZero() {
+		suite.EqualValues(0, actual)
+	} else {
 		suite.WithinDuration(expected, time.Unix(actual, 0), time.Second)
-    }
+	}
 }
 
 func (suite *UsageStatsTestSuite) Verify(lastUsed, lastUpdated time.Time,
@@ -50,8 +49,8 @@ func (suite *UsageStatsTestSuite) Verify(lastUsed, lastUpdated time.Time,
 	suite.Equal("test", raw.Name)
 	suite.EqualValues(success, raw.SuccessCount)
 	suite.EqualValues(failure, raw.FailureCount)
-    suite.VerifyTime(lastUsed, raw.LastUsed)
-    suite.VerifyTime(lastUpdated, raw.LastUpdated)
+	suite.VerifyTime(lastUsed, raw.LastUsed)
+	suite.VerifyTime(lastUpdated, raw.LastUpdated)
 }
 
 func (suite *UsageStatsTestSuite) TestEmpty() {
@@ -59,21 +58,21 @@ func (suite *UsageStatsTestSuite) TestEmpty() {
 }
 
 func (suite *UsageStatsTestSuite) TestUsed() {
-	suite.u.Used(nil)
+	suite.u.notifyUsed(nil)
 	suite.Verify(time.Now(), time.Time{}, 1, 0)
 
-	suite.u.Used(io.EOF)
+	suite.u.notifyUsed(io.EOF)
 	suite.Verify(time.Now(), time.Time{}, 1, 1)
 
-	suite.u.Used(io.EOF)
+	suite.u.notifyUsed(io.EOF)
 	suite.Verify(time.Now(), time.Time{}, 1, 2)
 
-	suite.u.Used(nil)
+	suite.u.notifyUsed(nil)
 	suite.Verify(time.Now(), time.Time{}, 2, 2)
 }
 
 func (suite *UsageStatsTestSuite) TestUpdated() {
-    suite.u.Updated()
+	suite.u.notifyUpdated()
 	suite.Verify(time.Time{}, time.Now(), 0, 0)
 }
 
