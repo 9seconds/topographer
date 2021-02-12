@@ -77,7 +77,7 @@ type Logger interface {
 
 	// UpdateInfo notifies that provider has updated a database with
 	// no errors.
-	UpdateInfo(name, msg string)
+	UpdateInfo(name string)
 
 	// UpdateError notifies that there was an error in updated database.
 	UpdateError(name string, err error)

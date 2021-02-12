@@ -17,8 +17,8 @@ func (l *logger) LookupError(ip net.IP, name string, err error) {
 	l.lookupLog.Error().Str("provider", name).Stringer("ip", ip).Err(err).Msg("")
 }
 
-func (l *logger) UpdateInfo(name, msg string) {
-	l.updateLog.Info().Str("provider", name).Msg(msg)
+func (l *logger) UpdateInfo(name string) {
+	l.updateLog.Info().Str("provider", name).Msg("Database was updated")
 }
 
 func (l *logger) UpdateError(name string, err error) {

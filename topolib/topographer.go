@@ -172,7 +172,7 @@ func (t *Topographer) Shutdown() {
 		t.workerPool.Release()
 
 		for _, v := range t.providers {
-			if vv, ok := v.(*fsUpdater); ok {
+			if vv, ok := v.(OfflineProvider); ok {
 				vv.Shutdown()
 			}
 		}
@@ -327,16 +327,10 @@ func NewTopographer(providers []Provider, logger Logger, workerPoolSize int) (*T
 		rv.providerStats[v.Name()] = stat
 
 		if vv, ok := v.(OfflineProvider); ok {
-			ctx, cancel := context.WithCancel(context.Background())
-			updater := &fsUpdater{
-				ctx:        ctx,
-				cancel:     cancel,
-				logger:     logger,
-				provider:   vv,
-				usageStats: stat,
-			}
+			updater, err := newFsUpdater(vv, logger, stat)
+			if err != nil {
+				rv.Shutdown()
 
-			if err := updater.Start(); err != nil {
 				return nil, fmt.Errorf("cannot start provider %s: %w", v.Name(), err)
 			}
 

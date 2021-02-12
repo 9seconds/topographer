@@ -2,258 +2,159 @@ package topolib
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 )
 
-const (
-	// FsTargetDirPrefix is a prefix which is used to mark 'active'
-	// directory with databases for the provider. All other
-	// directories/files are ok to be removed at any given moment in
-	// time.
-	//
-	// If there are many target directories, topographer uses a random
-	// one.
-	//
-	// Suffix is generated based on a contents of the directory.
-	// You can think about simplified merkle tree hash here.
-	FsTargetDirPrefix = "target_"
-
-	// FsTempDirPrefix defines a prefix for temporary directories populated
-	// during update of the offline databases.
-	//
-	// It works in a following way:
-	//    1. Each provider has its own base directory
-	//    2. When time comes, topographer creates a new temporary
-	//       and passes it to provider.
-	//    3. Provider does some nasty things there: downloads files
-	//       creates something and prepares a directory structure
-	//       applicable for Open method
-	//    4. Old target directory is removed and temporary one
-	//       is renamed into a new target one.
-	FsTempDirPrefix = "tmp_"
-)
-
-var (
-	errNoTargetDir = errors.New("cannot find a target dir")
-)
-
 type fsUpdater struct {
-	ctx        context.Context
-	cancel     context.CancelFunc
-	logger     Logger
-	provider   OfflineProvider
-	usageStats *UsageStats
-}
+	OfflineProvider
 
-func (f *fsUpdater) Name() string {
-	return f.provider.Name()
-}
-
-func (f *fsUpdater) Lookup(ctx context.Context, ip net.IP) (ProviderLookupResult, error) {
-	return f.provider.Lookup(ctx, ip)
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+	logger    Logger
+	fs        fsDir
+	stats     *UsageStats
 }
 
 func (f *fsUpdater) Start() error {
-	if err := f.doInitialCleaning(); err != nil {
-		return fmt.Errorf("cannot do an initial cleaning: %w", err)
+	targetDir, _, err := f.fs.GetTargetDir()
+	if err != nil {
+		return fmt.Errorf("cannot get target dir: %w", err)
 	}
 
-	targetDir, err := f.getTargetDir()
+	if err := f.fs.Cleanup(targetDir); err != nil {
+		return fmt.Errorf("cannot do startup cleanup: %w", err)
+	}
 
-	switch {
-	case err == nil:
-		if err := f.provider.Open(targetDir); err != nil {
-			return fmt.Errorf("cannot open a directory %s: %w", targetDir, err)
+	if targetDir != "" {
+		if err := f.Open(targetDir); err == nil {
+			go f.runBgUpdate()
+
+			return nil
 		}
-	case !errors.Is(err, errNoTargetDir):
-		return fmt.Errorf("cannot detect target dir: %w", err)
 	}
 
-	go f.bgUpdate()
+	if err := f.fs.Cleanup(); err != nil {
+		return fmt.Errorf("cannot make full cleanup: %w", err)
+	}
+
+	if err := f.doUpdate(); err != nil {
+		return fmt.Errorf("cannot fetch databases: %w", err)
+	}
+
+	f.logger.UpdateInfo(f.Name())
+
+	go f.runBgUpdate()
 
 	return nil
 }
 
 func (f *fsUpdater) Shutdown() {
-	f.cancel()
-	f.provider.Shutdown()
+	f.ctxCancel()
+	f.OfflineProvider.Shutdown()
 }
 
-func (f *fsUpdater) doInitialCleaning() error {
-	rootDir := f.provider.BaseDirectory()
+func (f *fsUpdater) runBgUpdate() {
+	_, modTime, _ := f.fs.GetTargetDir()
+	duration := time.Since(modTime)
 
-	infos, err := ioutil.ReadDir(rootDir)
-	if err != nil {
-		return fmt.Errorf("cannot read a base directory: %w", err)
-	}
+	if duration > 0 {
+		timer := time.NewTimer(duration)
+		defer func() {
+			timer.Stop()
 
-	targetDirs := []string{}
-	toDelete := []string{}
+			select {
+			case <-timer.C:
+			default:
+			}
+		}()
 
-	for _, v := range infos {
-		fullPath := filepath.Join(rootDir, v.Name())
-
-		if v.IsDir() && strings.HasPrefix(v.Name(), FsTargetDirPrefix) {
-			targetDirs = append(targetDirs, fullPath)
-		} else {
-			toDelete = append(toDelete, fullPath)
+		select {
+		case <-f.ctx.Done():
+			return
+		case <-timer.C:
 		}
 	}
-
-	// if we have more than a single target directory, it is a time to
-	// drop them all and start from scratch.
-	if len(targetDirs) > 1 {
-		toDelete = append(toDelete, targetDirs...)
-	}
-
-	for _, v := range toDelete {
-		if err := os.RemoveAll(v); err != nil {
-			return fmt.Errorf("cannot delete %s: %w", v, err)
-		}
-	}
-
-	return nil
-}
-
-func (f *fsUpdater) bgUpdate() {
-	timer := time.NewTicker(f.provider.UpdateEvery())
-	defer timer.Stop()
 
 	if err := f.doUpdate(); err != nil {
 		f.logger.UpdateError(f.Name(), err)
 	} else {
-		f.usageStats.Updated()
-		f.logger.UpdateInfo(f.Name(), "db has been updated")
+		f.logger.UpdateInfo(f.Name())
 	}
+
+	ticker := time.NewTicker(f.UpdateEvery())
+	defer func() {
+		ticker.Stop()
+
+		select {
+		case <-ticker.C:
+		default:
+		}
+	}()
 
 	for {
 		select {
 		case <-f.ctx.Done():
 			return
-		case <-timer.C:
+		case <-ticker.C:
 			if err := f.doUpdate(); err != nil {
 				f.logger.UpdateError(f.Name(), err)
 			} else {
-				f.logger.UpdateInfo(f.Name(), "db has been updated")
+				f.logger.UpdateInfo(f.Name())
 			}
 		}
 	}
 }
 
 func (f *fsUpdater) doUpdate() error {
-	currentTargetDir, err := f.getTargetDir()
-	if err != nil && !errors.Is(err, errNoTargetDir) {
-		return fmt.Errorf("cannot detect current target dir: %w", err)
-	}
-
-	rootDir := f.provider.BaseDirectory()
-
-	tmpDir, err := ioutil.TempDir(rootDir, "")
+	tmpDir, err := f.fs.TempDir()
 	if err != nil {
-		return fmt.Errorf("cannot create a temporary directory: %w", err)
+		return fmt.Errorf("cannot make a temporary dir: %w", err)
 	}
 
-	defer os.RemoveAll(tmpDir) // nolint: errcheck
+	defer os.RemoveAll(tmpDir)
 
-	if err := f.provider.Download(f.ctx, tmpDir); err != nil {
-		return fmt.Errorf("cannot download to tmp directory: %w", err)
+	if err := f.Download(f.ctx, tmpDir); err != nil {
+		return fmt.Errorf("cannot download databases: %w", err)
 	}
 
-	targetDirName, err := f.getTargetDirName(tmpDir)
+	newTargetDir, needToReopen, err := f.fs.Promote(tmpDir)
 	if err != nil {
-		return fmt.Errorf("cannot get a target dir name: %w", err)
+		return fmt.Errorf("cannot promote tmp dir: %w", err)
 	}
 
-	if targetDirName == currentTargetDir {
-		return nil
-	}
+	if needToReopen {
+		if err := f.Open(newTargetDir); err != nil {
+			os.RemoveAll(newTargetDir)
 
-	if currentTargetDir != "" {
-		if err := os.RemoveAll(currentTargetDir); err != nil {
-			return fmt.Errorf("cannot remove current target dir: %w", err)
+			return fmt.Errorf("cannot open a new target dir: %w", err)
 		}
 	}
 
-	if err := os.Rename(tmpDir, targetDirName); err != nil {
-		return fmt.Errorf("cannot rename tmp dir to target one: %w", err)
-	}
-
-	if err := f.provider.Open(targetDirName); err != nil {
-		return fmt.Errorf("cannot open a target dir: %w", err)
-	}
+	f.fs.Cleanup(newTargetDir) // nolint: errcheck
+	f.stats.Updated()
 
 	return nil
 }
 
-func (f *fsUpdater) getTargetDir() (string, error) {
-	rootDir := f.provider.BaseDirectory()
+func newFsUpdater(provider OfflineProvider, logger Logger, stats *UsageStats) (OfflineProvider, error) {
+	ctx, cancel := context.WithCancel(context.Background())
 
-	infos, err := ioutil.ReadDir(rootDir)
-	if err != nil {
-		return "", fmt.Errorf("cannot read base directory: %w", err)
+	updater := &fsUpdater{
+		OfflineProvider: provider,
+		ctx:             ctx,
+		ctxCancel:       cancel,
+		logger:          logger,
+		fs:              fsDir{Dir: provider.BaseDirectory()},
+		stats:           stats,
 	}
 
-	for _, v := range infos {
-		if v.IsDir() && strings.HasPrefix(v.Name(), FsTargetDirPrefix) {
-			return filepath.Join(rootDir, v.Name()), nil
-		}
+	if err := updater.Start(); err != nil {
+		return nil, fmt.Errorf("cannot start fs updater for provider %s: %w",
+			provider.Name(),
+			err)
 	}
 
-	return "", errNoTargetDir
-}
-
-func (f *fsUpdater) getTargetDirName(rootDir string) (string, error) {
-	hasher := sha256.New()
-	startSign := []byte{0}
-	fileSign := []byte{1}
-
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		switch {
-		case err != nil:
-			return err
-		case info.IsDir():
-			return nil
-		}
-
-		relPath, err := filepath.Rel(rootDir, path)
-		if err != nil {
-			return fmt.Errorf("cannot build a relative path of %s to %s: %w",
-				path,
-				rootDir,
-				err)
-		}
-
-		hasher.Write(startSign)         // nolint: errcheck
-		io.WriteString(hasher, relPath) // nolint: errcheck
-
-		fp, err := os.Open(path)
-		if err != nil {
-			return fmt.Errorf("cannot open a file %s: %w", path, err)
-		}
-
-		defer fp.Close()
-
-		hasher.Write(fileSign) // nolint: errcheck
-		io.Copy(hasher, fp)    // nolint: errcheck
-
-		return nil
-	})
-
-	if err != nil {
-		return "", fmt.Errorf("cannot calculate a checksum: %w", err)
-	}
-
-	baseName := FsTargetDirPrefix + hex.EncodeToString(hasher.Sum(nil))
-
-	return filepath.Join(f.provider.BaseDirectory(), baseName), nil
+	return updater, nil
 }

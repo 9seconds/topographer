@@ -54,8 +54,8 @@ func (m *LoggerMock) LookupError(ip net.IP, name string, err error) {
 	m.Called(ip, name, err)
 }
 
-func (m *LoggerMock) UpdateInfo(name, msg string) {
-	m.Called(name, msg)
+func (m *LoggerMock) UpdateInfo(name string) {
+	m.Called(name)
 }
 
 func (m *LoggerMock) UpdateError(name string, err error) {

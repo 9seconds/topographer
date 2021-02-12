@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
-	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,22 +24,23 @@ type FsUpdaterTestSuite struct {
 }
 
 func (suite *FsUpdaterTestSuite) SetupTest() {
+	baseDir, err := ioutil.TempDir("", "fs_updater_test_suite_")
+	suite.baseDir = baseDir
+
+	suite.NoError(err)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	suite.ctxCancel = cancel
 	suite.providerMock = &OfflineProviderMock{}
 	suite.loggerMock = &LoggerMock{}
 	suite.u = &fsUpdater{
-		ctx:        ctx,
-		cancel:     cancel,
-		logger:     suite.loggerMock,
-		provider:   suite.providerMock,
-		usageStats: &UsageStats{},
+		OfflineProvider: suite.providerMock,
+		ctx:             ctx,
+		ctxCancel:       cancel,
+		logger:          suite.loggerMock,
+		fs:              fsDir{Dir: baseDir},
+		stats:           &UsageStats{},
 	}
-
-	baseDir, err := ioutil.TempDir("", "fs_updater_test_suite_")
-	suite.baseDir = baseDir
-
-	suite.NoError(err)
 
 	suite.providerMock.On("Shutdown")
 	suite.providerMock.On("Name").Return("providerMock").Maybe()
@@ -59,23 +59,6 @@ func (suite *FsUpdaterTestSuite) TearDownTest() {
 	os.RemoveAll(suite.baseDir)
 }
 
-func (suite *FsUpdaterTestSuite) TestName() {
-	suite.Equal("providerMock", suite.u.Name())
-}
-
-func (suite *FsUpdaterTestSuite) TestLookup() {
-	ctx := context.Background()
-	ip := net.ParseIP("127.0.0.1").To4()
-	res := ProviderLookupResult{}
-
-	suite.providerMock.On("Lookup", ctx, ip).Return(res, nil)
-
-	r, err := suite.u.Lookup(ctx, ip)
-
-	suite.NoError(err)
-	suite.Equal(res, r)
-}
-
 func (suite *FsUpdaterTestSuite) TestInitialCleaning() {
 	targetDir, err := ioutil.TempDir(suite.baseDir, FsTargetDirPrefix)
 
@@ -92,16 +75,14 @@ func (suite *FsUpdaterTestSuite) TestInitialCleaning() {
 	errToCheck := errors.New("new error")
 
 	suite.providerMock.On("Open", targetDir).Return(errToCheck)
+	suite.providerMock.On("Download", mock.Anything, mock.Anything).Return(errToCheck)
 
-	err = suite.u.Start()
-
-	suite.True(errors.Is(err, errToCheck))
+	suite.Error(suite.u.Start())
 
 	infos, err := ioutil.ReadDir(suite.baseDir)
 
 	suite.NoError(err)
-	suite.Len(infos, 1)
-	suite.Equal(filepath.Base(targetDir), infos[0].Name())
+	suite.Len(infos, 0)
 }
 
 func (suite *FsUpdaterTestSuite) TestOk() {
