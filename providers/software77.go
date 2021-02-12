@@ -27,8 +27,6 @@ var (
 )
 
 const (
-	NameSoftware77 = "software77"
-
 	software77IPv4FileName      = "ipv4.csv"
 	software77IPv4DownloadParam = "1"
 	software77IPv4MD5Param      = "3"
@@ -309,6 +307,15 @@ func (s *software77Provider) buildURL(param string) string {
 	return u.String()
 }
 
+// NewSoftware77 returns a new instance which works with
+// databases from software77.
+//
+//   Identifier: software77
+//   Provider type: offline
+//   Website: https://software77.com
+//
+// One of the most oldest databases available. Has no cities,
+// only countries.
 func NewSoftware77(client topolib.HTTPClient,
 	updateEvery time.Duration,
 	baseDirectory string) topolib.OfflineProvider {

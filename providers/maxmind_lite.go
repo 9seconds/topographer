@@ -25,8 +25,6 @@ var (
 )
 
 const (
-	NameMaxmindLite = "maxmind_lite"
-
 	maxmindLiteArchiveName = "archive.tar.gz"
 )
 
@@ -200,6 +198,15 @@ func (m *maxmindLiteProvider) buildURL(suffix string) string {
 	return urlStruct.String()
 }
 
+// NewMaxmindLite returns a new instance which works with lite
+// databases from MaxMind.
+//
+//   Identifier: maxmind_lite
+//   Provider type: offline
+//   Website: https://maxmind.com
+//
+// Probably a main choice if we speak on IP geolocation
+// databases. The biggest player in this field.
 func NewMaxmindLite(httpClient topolib.HTTPClient,
 	updateEvery time.Duration,
 	baseDirectory string,

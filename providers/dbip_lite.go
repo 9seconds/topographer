@@ -24,8 +24,6 @@ var (
 	dbipLiteSha1ChecksumRegexp = regexp.MustCompile(`(?i)[0-9a-f]{40}`)
 )
 
-const NameDBIPLite = "dbip_lite"
-
 type dbipLiteProvider struct {
 	maxmindBase
 
@@ -130,6 +128,14 @@ func (d *dbipLiteProvider) downloadFile(ctx context.Context, rootDir string, url
 	return nil
 }
 
+// NewDBIPLite returns a new instance which works with db-ip.com
+//
+//   Identifier: dbip_lite
+//   Provider type: offline
+//   Website: https://db-ip.com
+//
+// DB-IP is quite a decent provider which has a results quality quite
+// similar to MaxMind.
 func NewDBIPLite(httpClient topolib.HTTPClient, updateEvery time.Duration, baseDirectory string) topolib.OfflineProvider {
 	return &dbipLiteProvider{
 		httpClient:    httpClient,

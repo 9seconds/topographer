@@ -15,8 +15,6 @@ import (
 	"github.com/9seconds/topographer/topolib"
 )
 
-const NameIP2C = "ip2c"
-
 type ip2cProvider struct {
 	client topolib.HTTPClient
 }
@@ -81,6 +79,15 @@ func (i ip2cProvider) buildURL(ip net.IP) string {
 	return u.String()
 }
 
+// NewIP2C returns a new instance which works with ip2c.org
+//
+//   Identifier: ip2c
+//   Provider type: online
+//   Website: https://about.ip2c.org
+//
+// ip2c is not really well-known but quite old and reliable webservice
+// which provides you with IP geolocation data. Seems using Software77
+// databases. Has no cities, only countries.
 func NewIP2C(client topolib.HTTPClient) topolib.Provider {
 	return ip2cProvider{
 		client: client,

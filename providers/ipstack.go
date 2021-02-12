@@ -12,8 +12,6 @@ import (
 	"github.com/9seconds/topographer/topolib"
 )
 
-const NameIPStack = "ipstack"
-
 type ipstackResponse struct {
 	Error struct {
 		Code int    `json:"code"`
@@ -46,7 +44,7 @@ func (i ipstackProvider) Lookup(ctx context.Context, ip net.IP) (topolib.Provide
 		return result, fmt.Errorf("cannot send a request: %w", err)
 	}
 
-    defer flushResponse(resp.Body)
+	defer flushResponse(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return result, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
@@ -93,6 +91,14 @@ func (i ipstackProvider) buildURL(ip net.IP) string {
 	return u.String()
 }
 
+// NewIPStack returns a new instance which works with ipstack.com
+//
+//   Identifier: ipstack
+//   Provider type: online
+//   Website: https://ipstack.com
+//
+// A brother/sister of ipinfo. Has a lot of big logos on its
+// frontend page, sells https for money.
 func NewIPStack(client topolib.HTTPClient, authToken string, isSecure bool) (topolib.Provider, error) {
 	scheme := "http"
 

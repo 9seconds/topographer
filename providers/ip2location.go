@@ -20,8 +20,6 @@ import (
 )
 
 const (
-	NameIP2Location = "ip2location_lite"
-
 	ip2locationLiteDB   = "DB3LITEBINIPV6"
 	ip2locationFileName = "database.bin"
 )
@@ -176,6 +174,20 @@ func (i *ip2locationProvider) buildURL() string {
 	return u.String()
 }
 
+// NewIP2Location returns a new instance which works with databases
+// from lite.ip2location.com
+//
+//   Identifier: ip2location_lite
+//   Provider type: offline
+//   Website: https://lite.ip2location.com
+//
+// ip2location seems quite strange and somehow 'unstable' provider but
+// quite popular. It is present mostly because of that fact: a lot of
+// websites use it.
+//
+// Please also pay attention to dbCode to supply. Topographer works with
+// BIN format, IPv6 and at least level 3. If you are not sure which
+// database to use, pass an empty string here.
 func NewIP2Location(client topolib.HTTPClient,
 	updateEvery time.Duration,
 	baseDirectory, authToken, dbCode string) (topolib.OfflineProvider, error) {

@@ -12,8 +12,6 @@ import (
 	"github.com/9seconds/topographer/topolib"
 )
 
-const NameIPInfo = "ipinfo"
-
 type ipinfoResponse struct {
 	City    string `json:"city"`
 	Country string `json:"country"`
@@ -74,6 +72,14 @@ func (i ipinfoProvider) buildURL(ip net.IP) string {
 	return u.String()
 }
 
+// NewIPInfo returns a new instance which works with ipinfo.io
+//
+//   Identifier: ipinfo
+//   Provider type: online
+//   Website: https://ipinfo.io
+//
+// ipinfo.io seems one of the most popular choices for REST API
+// services.
 func NewIPInfo(client topolib.HTTPClient, authToken string) topolib.Provider {
 	return ipinfoProvider{
 		authToken: authToken,
