@@ -1,4 +1,5 @@
 ROOT_DIR   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+IMAGE_NAME := topographer
 
 GOLANGCI_LINT_VERSION := v1.33.0
 
@@ -38,6 +39,10 @@ clean:
 .PHONY: lint
 lint:
 	@$(GOTOOL) golangci-lint run
+
+.PHONY: docker
+docker:
+	@docker build --pull -t "$(IMAGE_NAME)" "$(ROOT_DIR)"
 
 .PHONY: doc
 doc:
