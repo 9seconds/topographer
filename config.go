@@ -1,13 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/hjson/hjson-go"
 )
 
 const (
@@ -24,7 +25,7 @@ type duration struct {
 func (d *duration) UnmarshalJSON(b []byte) error {
 	var v interface{}
 
-	if err := json.Unmarshal(b, &v); err != nil {
+	if err := hjson.Unmarshal(b, &v); err != nil {
 		return fmt.Errorf("cannot unmarshal duration: %w", err)
 	}
 
@@ -125,11 +126,11 @@ func (c configProvider) GetHTTPTimeout() time.Duration {
 }
 
 func (c configProvider) GetSpecificParameters() map[string]string {
-    if c.SpecificParameters == nil {
-        return map[string]string{}
-    }
+	if c.SpecificParameters == nil {
+		return map[string]string{}
+	}
 
-    return c.SpecificParameters
+	return c.SpecificParameters
 }
 
 func parseConfig(path string) (*config, error) {
@@ -140,7 +141,7 @@ func parseConfig(path string) (*config, error) {
 
 	conf := config{}
 
-	if err := json.Unmarshal(content, &conf); err != nil {
+	if err := hjson.Unmarshal(content, &conf); err != nil {
 		return nil, fmt.Errorf("cannot parse json: %w", err)
 	}
 
