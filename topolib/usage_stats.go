@@ -58,9 +58,7 @@ func (u *UsageStats) notifyUsed(err error) {
 	}
 }
 
-func (u *UsageStats) notifyUpdated() {
-	now := time.Now()
-
+func (u *UsageStats) notifyUpdated(now time.Time) {
 	u.mutex.Lock()
 	defer u.mutex.Unlock()
 

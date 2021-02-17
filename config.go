@@ -141,15 +141,15 @@ func parseConfig(path string) (*config, error) {
 	}
 
 	conf := config{}
-	raw := map[string]interface{}{}
+	rawMap := map[string]interface{}{}
 
-	if err := hjson.Unmarshal(content, &raw); err != nil {
+	if err := hjson.Unmarshal(content, &rawMap); err != nil {
 		return nil, fmt.Errorf("cannot parse json: %w", err)
 	}
 
-	br, _ := json.Marshal(raw)
+	rawBytes, _ := json.Marshal(rawMap)
 
-	json.Unmarshal(br, &conf)
+    json.Unmarshal(rawBytes, &conf) // nolint: errcheck
 
 	if _, _, err := net.SplitHostPort(conf.Listen); err != nil {
 		return nil, fmt.Errorf("incorrect host:port for listen: %w", err)

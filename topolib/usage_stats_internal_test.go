@@ -72,7 +72,7 @@ func (suite *UsageStatsTestSuite) TestUsed() {
 }
 
 func (suite *UsageStatsTestSuite) TestUpdated() {
-	suite.u.notifyUpdated()
+	suite.u.notifyUpdated(time.Now())
 	suite.Verify(time.Time{}, time.Now(), 0, 0)
 }
 

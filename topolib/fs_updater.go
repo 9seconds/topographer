@@ -18,7 +18,7 @@ type fsUpdater struct {
 }
 
 func (f *fsUpdater) Start() error {
-	targetDir, _, err := f.fs.GetTargetDir()
+	targetDir, targetTime, err := f.fs.GetTargetDir()
 	if err != nil {
 		return fmt.Errorf("cannot get target dir: %w", err)
 	}
@@ -29,6 +29,8 @@ func (f *fsUpdater) Start() error {
 
 	if targetDir != "" {
 		if err := f.Open(targetDir); err == nil {
+			f.stats.notifyUpdated(targetTime)
+
 			go f.runBgUpdate()
 
 			return nil
@@ -127,7 +129,7 @@ func (f *fsUpdater) doUpdate() error {
 	}
 
 	f.fs.Cleanup(newTargetDir) // nolint: errcheck
-	f.stats.notifyUpdated()
+	f.stats.notifyUpdated(time.Now())
 
 	return nil
 }
