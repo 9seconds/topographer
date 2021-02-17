@@ -1,7 +1,7 @@
 Topographer
 ===========
 
-[![Build Status](https://travis-ci.org/9seconds/topographer.svg?branch=master)](https://travis-ci.org/9seconds/topographer)
+[![Build Status](https://github.com/9seconds/topographer/workflows/ci/badge.svg)](https://github.com/9seconds/topographer/actions)
 
 Fast and lenient self-hosted IP geolocation service.
 

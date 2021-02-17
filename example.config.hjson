@@ -1,0 +1,129 @@
+/*
+ * This is an example of configuration file for topographer.
+ *
+ * Yes, it looks like JSON but actually this is HJSON. You can think
+ * about HJSON as about relaxed human-friendly JSON with comments,
+ * no-trailing-commas etc.
+ *
+ * But if you want, you can still use same JSON. Each JSON is valid
+ * HJSON.
+ *
+ * https://hjson.github.io/
+ *
+ */
+{
+    // This parameter specifies host:port to bind server to
+    "listen": ":8000",
+
+    // This parameters specifies a root directory where topographer
+    // puts downloaded files, extracted databases etc. We expect this
+    // directory is readable, executable and writable by the target
+    // user.
+    "root_directory": "/tmp/topographer",
+
+    // This setting defines a size of the worker pool. Each worker
+    // do a single task: resolve a single IP address with all given
+    // providers. So, a task is not how to resolve IP address per
+    // provider but how to resolve IP address with given configured
+    // settings.
+    //
+    // This setting is set to default value. Uncomment and set a new one
+    // if required.
+    # "worker_pool_size": 4096,
+
+    // Here goes specific settings for each provider. If you want to use
+    // some provider, you need to have a configuration setting here.
+    //
+    // This example has _each_ provider. Some of them are commented,
+    // some - do not. Commented providers are providers which usually
+    // require some auth tokens etc.
+    //
+    // So, the idea that you can run this tool and have some set of
+    // providers immediately available.
+    //
+    // A common datastruct for provider looks like (with given defaults):
+    //
+    //     {
+    //         "name": "provider_name",
+    //         "directory": "${provider_name}",
+    //         "rate_limit_interval": "100ms",
+    //         "rate_limit_burst": 10,
+    //         "update_every": "24h",
+    //         "http_timeout": "10s",
+    //         "specific_parameters": {}
+    //     }
+    //
+    // The only mandatory field is name (obviously, we need to know what
+    // to refer to).
+    //
+    // directory is subdirectory in root directory to use. By default,
+    // we use provider_name if this field is empty.
+    //
+    // Please see rate_limit_interval and rate_limit_burst meanings
+    // here: https://pkg.go.dev/golang.org/x/time/rate
+    //
+    // update_every is a periodicity that is used to update provider
+    // database if this is applicable.
+    //
+    // http_timeout define timeout for HTTP requests
+    //
+    // specific_parameters is key-value mapping with options
+    // specific to that provider.
+    "providers": [
+        {
+            // Settings for DB-IP provider. We use lite databases there.
+            // This provider has no specific settings.
+            "name": "dbip_lite",
+        },
+        {
+            // ip2c.org provider. Online one, does not require any
+            // specific settings.
+            "name": "ip2c"
+        },
+        # {
+        #     // IP2Location provider. We use lite databases there but to
+        #     // access them, auth token is required.
+        #     "name": "ip2location_lite",
+        #     "specific_parameters": {
+        #         // auth token
+        #         "auth_token": "",
+        #         // code for database to use.
+        #         // we need:
+        #         //   1. At least level 3 database
+        #         //   2. BIN, not CSV
+        #         //   3. With IPv6
+        #         // do not pass anything to use a default one
+        #         "db_code": "DB3LITEBINIPV6"
+        #     }
+        # },
+        {
+            // ipinfo provider
+            "name": "ipinfo",
+            "specific_parameters": {
+                // you can use your token here. pass nothing to use
+                // anonymous free-tier.
+                "auth_token": ""
+            }
+        },
+        # {
+        #     // ipstack.com provider.
+        #     "name": "ipstack",
+        #     "specific_parameters": {
+        #         // token is required.
+        #         "auth_token": ""
+        #     }
+        # },
+        # {
+        #     // GeoIP2Lite databases for MaxMind. Token is required
+        #     "name": "maxmind_lite",
+        #     "specific_parameters": {
+        #         // token is required
+        #         "license_key": ""
+        #     }
+        # },
+        {
+            // good old software77. No specific parameters are required.
+            "name": "software77"
+        }
+    ]
+}

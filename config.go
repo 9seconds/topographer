@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -25,7 +26,7 @@ type duration struct {
 func (d *duration) UnmarshalJSON(b []byte) error {
 	var v interface{}
 
-	if err := hjson.Unmarshal(b, &v); err != nil {
+	if err := json.Unmarshal(b, &v); err != nil {
 		return fmt.Errorf("cannot unmarshal duration: %w", err)
 	}
 
@@ -140,10 +141,15 @@ func parseConfig(path string) (*config, error) {
 	}
 
 	conf := config{}
+	raw := map[string]interface{}{}
 
-	if err := hjson.Unmarshal(content, &conf); err != nil {
+	if err := hjson.Unmarshal(content, &raw); err != nil {
 		return nil, fmt.Errorf("cannot parse json: %w", err)
 	}
+
+	br, _ := json.Marshal(raw)
+
+	json.Unmarshal(br, &conf)
 
 	if _, _, err := net.SplitHostPort(conf.Listen); err != nil {
 		return nil, fmt.Errorf("incorrect host:port for listen: %w", err)
