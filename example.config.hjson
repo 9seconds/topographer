@@ -69,6 +69,9 @@
     //
     // specific_parameters is key-value mapping with options
     // specific to that provider.
+    //
+    // Valid duration units are ns, us, ms, s, m and h. So, 24h and 1
+    // minute is 24h1m. Same rules as in Golang.
     "providers": [
         {
             // Settings for DB-IP provider. We use lite databases there.
