@@ -1,0 +1,267 @@
+---
+
+openapi: "3.0.0"
+
+info:
+  version: 1.0.0
+  title: Topographer
+  description: A lenient IP geolocation service
+  contact:
+    name: Sergey Arkhipov
+    email: nineseconds@yandex.ru
+    url: https://github.com/9seconds/topographer
+  license:
+    name: MIT
+    url: https://github.com/9seconds/topographer/blob/master/LICENSE
+
+paths:
+  /:
+    get:
+      description: >
+        Resolve IP geolocation of the caller. This is done based on
+        http.Request.RemoteAddr so please check golang's documentation
+        on how this field is populated. All providers are used.
+      operationId: getSelf
+      responses:
+        "200":
+          description: Results of resolved geolocation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - result
+                additionalProperties: false
+                properties:
+                  result:
+                    $ref: "#/components/schemas/GeolocationResult"
+        default:
+          description: Error response in case if geolocation is impossible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseError"
+    post:
+      description: >
+        Resolve IP geolocation of given IP addresses with a chosen
+        set of providers.
+      operationId: postIPs
+      requestBody:
+        description: IPs to resolve
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ips
+              additionalProperties: false
+              properties:
+                ips:
+                  title: A list of IPs to resolve
+                  minItems: 1
+                  items:
+                    $ref: "#/components/schemas/IP"
+                providers:
+                  title: Codes of providers to use
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ProviderName"
+      responses:
+        "200":
+          description: Results of resolved geolocation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - results
+                additionalProperties: false
+                properties:
+                  results:
+                    type: array
+                    minItems: 1
+                    items:
+                      $ref: "#/components/schemas/GeolocationResult"
+        default:
+          description: Error response in case if geolocation is impossible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseError"
+  /stats:
+    get:
+      description: Different statistics on provider usage
+      operationId: getStats
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - results
+                additionalProperties: false
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StatsResult"
+        default:
+          description: Error response in case if something went wrong
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseError"
+
+components:
+  schemas:
+    GeolocationResult:
+      title: Geolocation result
+      type: object
+      required:
+        - ip
+        - country
+        - city
+        - details
+      additionalProperties: false
+      properties:
+        ip:
+          $ref: "#/components/schemas/IP"
+        country:
+          title: Information about country
+          type: object
+          required:
+            - alpha2_code
+            - alpha3_code
+            - common_name
+            - official_name
+          additionalProperties: false
+          properties:
+            alpha2_code:
+              $ref: "#/components/schemas/Alpha2Code"
+            alpha3_code:
+              title: ISO3166 3-letter country code
+              type: string
+              anyOf:
+                - minLength: 3
+                  maxLength: 3
+                - maxLength: 0
+              example: RUS
+            common_name:
+              title: A common name we use in talks
+              type: string
+              example: Russia
+            official_name:
+              title: A name of the country in official papers
+              type: string
+              example: Russian Federation
+        city:
+          $ref: "#/components/schemas/City"
+        details:
+          title: Additional information about votes made by all providers
+          type: array
+          items:
+            type: object
+            required:
+              - provider_name
+              - country_code
+              - city
+            additionalProperties: false
+            properties:
+              provider_name:
+                $ref: "#/components/schemas/ProviderName"
+              country_code:
+                $ref: "#/components/schemas/Alpha2Code"
+              city:
+                $ref: "#/components/schemas/City"
+
+    IP:
+      title: IP address to resolve
+      type: string
+      anyOf:
+        - format: ipv4
+          minLength: 7
+          maxLength: 15
+        - format: ipv6
+          minLength: 2
+          maxLength: 36
+      example: 80.81.82.83
+
+    ProviderName:
+      type: string
+      minLength: 1
+      example: maxmind_lite
+
+    Alpha2Code:
+      title: ISO3166 2-letter country code
+      type: string
+      anyOf:
+        - minLength: 2
+          maxLength: 2
+        - maxLength: 0
+      example: RU
+
+    City:
+      title: A name of the city where this IP is operated
+      type: string
+      example: Moscow
+
+    StatsResult:
+      type: object
+      required:
+        - provider_name
+        - last_updated
+        - last_used
+        - success_count
+        - failure_count
+      additionalProperties: false
+      properties:
+        provider_name:
+          $ref: "#/components/schemas/ProviderName"
+        last_updated:
+          title: A unix timestamp of time when provider was updated last time
+          type: integer
+          minimum: 0
+          example: 123233423
+        last_used:
+          title: A unix timestamp of time when provider was used last time
+          type: integer
+          minimum: 0
+          example: 2347283913
+        success_count:
+          title: >
+            A number of times when provider lookup was finished successfully
+          type: integer
+          minimum: 0
+          example: 100
+        failure_count:
+          title: A number of times when provider lookup was failed
+          type: integer
+          minimum: 0
+          example: 100
+
+    ResponseError:
+      title: A common structure for all errors produced by topographer
+      type: object
+      required:
+        - error
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          required:
+            - message
+            - context
+          additionalProperties: false
+          properties:
+            message:
+              title: A desciption why this error has happened
+              type: string
+              minLength: 1
+            context:
+              title: >
+                Some optional context text which helps to understand a
+                reason better.
+              type: string
