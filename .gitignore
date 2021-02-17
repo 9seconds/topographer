@@ -17,3 +17,4 @@ vendor/
 tags
 topographer
 .bin/
+coverage.txt
