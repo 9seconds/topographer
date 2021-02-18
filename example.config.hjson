@@ -15,6 +15,11 @@
     // This parameter specifies host:port to bind server to
     "listen": ":8000",
 
+    // These settings are related to basic auth. If both are empty, then
+    // no basic auth is enabled.
+    "basic_auth_user": "",
+    "basic_auth_password": "",
+
     // This parameters specifies a root directory where topographer
     // puts downloaded files, extracted databases etc. We expect this
     // directory is readable, executable and writable by the target

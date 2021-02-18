@@ -46,10 +46,12 @@ func (d *duration) UnmarshalJSON(b []byte) error {
 }
 
 type config struct {
-	Listen         string           `json:"listen"`
-	RootDirectory  string           `json:"root_directory"`
-	WorkerPoolSize uint             `json:"worker_pool_size"`
-	Providers      []configProvider `json:"providers"`
+	Listen            string           `json:"listen"`
+	RootDirectory     string           `json:"root_directory"`
+	WorkerPoolSize    uint             `json:"worker_pool_size"`
+	BasicAuthUser     string           `json:"basic_auth_user"`
+	BasicAuthPassword string           `json:"basic_auth_password"`
+	Providers         []configProvider `json:"providers"`
 }
 
 func (c config) GetListen() string {
@@ -66,6 +68,18 @@ func (c config) GetRootDirectory() string {
 
 func (c config) GetWorkerPoolSize() int {
 	return int(c.WorkerPoolSize)
+}
+
+func (c config) GetBasicAuthUser() []byte {
+    return []byte(c.BasicAuthUser)
+}
+
+func (c config) GetBasicAuthPassword() []byte {
+    return []byte(c.BasicAuthPassword)
+}
+
+func (c config) HasBasicAuth() bool {
+    return c.BasicAuthUser != "" || c.BasicAuthPassword != ""
 }
 
 func (c config) GetProviders() []configProvider {
@@ -149,7 +163,7 @@ func parseConfig(path string) (*config, error) {
 
 	rawBytes, _ := json.Marshal(rawMap)
 
-    json.Unmarshal(rawBytes, &conf) // nolint: errcheck
+	json.Unmarshal(rawBytes, &conf) // nolint: errcheck
 
 	if _, _, err := net.SplitHostPort(conf.Listen); err != nil {
 		return nil, fmt.Errorf("incorrect host:port for listen: %w", err)

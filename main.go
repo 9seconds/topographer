@@ -65,10 +65,20 @@ func mainFunc() error {
 		return fmt.Errorf("cannot initialize topographer: %w", err)
 	}
 
+	var httpHandler http.Handler = topo
+
+	if conf.HasBasicAuth() {
+		httpHandler = &basicAuthMiddleware{
+			handler:  httpHandler,
+			user:     conf.GetBasicAuthUser(),
+			password: conf.GetBasicAuthPassword(),
+		}
+	}
+
 	srv := &http.Server{
 		ReadTimeout:  DefaultReadTimeout,
 		WriteTimeout: DefaultWriteTimeout,
-		Handler:      topo,
+		Handler:      httpHandler,
 	}
 	closeChan := make(chan struct{})
 
