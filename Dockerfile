@@ -9,7 +9,7 @@
 FROM golang:1.15-alpine AS build-env
 
 RUN set -x \
-  && apk --update add git make upx
+  && apk --update add git make
 
 ADD . /go/src/github.com/9seconds/topographer
 WORKDIR /go/src/github.com/9seconds/topographer
@@ -17,8 +17,7 @@ WORKDIR /go/src/github.com/9seconds/topographer
 RUN set -x \
   && make clean \
   && git submodule update --init \
-  && make -j 4 static-build \
-  && upx --ultra-brute -qq ./topographer
+  && make -j 4 static-build
 
 
 ###############################################################################
