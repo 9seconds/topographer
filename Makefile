@@ -1,7 +1,7 @@
 ROOT_DIR   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 IMAGE_NAME := topographer
 
-GOLANGCI_LINT_VERSION := v1.33.0
+GOLANGCI_LINT_VERSION := v1.37.0
 
 VERSION_GO   := $(shell go version)
 VERSION_DATE := $(shell date -Ru)
