@@ -1,0 +1,36 @@
+#
+# INFORMATION AND NOTES ON IpToCountry
+# ====================================
+#
+# LICENSE: "DONATIONWARE"
+# =======================
+#
+# Definition: http://en.wikipedia.org/wiki/Donationware
+# Definition: http://www.techterms.com/definition/donationware
+#
+# This database is "DONATIONWARE"
+# ===============================
+"16777216","16777471","apnic","1313020800","AU","AUS","Australia"
+"16777472","16777727","apnic","1302739200","CN","CHN","China"
+"16777728","16778239","apnic","1302739200","CN","CHN","China"
+"16778240","16779263","apnic","1302566400","AU","AUS","Australia"
+"16779264","16781311","apnic","1302566400","CN","CHN","China"
+"16781312","16785407","apnic","1302566400","JP","JPN","Japan"
+"16785408","16793599","apnic","1302566400","CN","CHN","China"
+"16793600","16809983","apnic","1302566400","JP","JPN","Japan"
+"16809984","16842751","apnic","1302220800","TH","THA","Thailand"
+"16842752","16843007","apnic","1302739200","CN","CHN","China"
+"16843008","16843263","apnic","1313020800","AU","AUS","Australia"
+"16843264","16843775","apnic","1302739200","CN","CHN","China"
+"16843776","16844799","apnic","1302739200","CN","CHN","China"
+"16844800","16845055","apnic","1302566400","CN","CHN","China"
+"16845056","16845311","apnic","1302566400","CN","CHN","China"
+"16845312","16845823","apnic","1302566400","CN","CHN","China"
+"16845824","16846847","apnic","1302566400","CN","CHN","China"
+"16846848","16850943","apnic","1302566400","CN","CHN","China"
+"16850944","16859135","apnic","1302566400","CN","CHN","China"
+"16859136","16875519","apnic","1302566400","JP","JPN","Japan"
+"16875520","16908287","apnic","1302220800","TH","THA","Thailand"
+"16908288","16908799","apnic","1302739200","CN","CHN","China"
+"16908800","16909055","apnic","1301529600","CN","CHN","China"
+"16909056","16909311","apnic","1313020800","AU","AUS","Australia"

@@ -2,7 +2,12 @@ package providers
 
 import (
 	"archive/zip"
+	"context"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -10,146 +15,195 @@ import (
 	"sync"
 	"time"
 
-	ip2location "github.com/ip2location/ip2location-go"
-	log "github.com/sirupsen/logrus"
-
-	"github.com/9seconds/topographer/config"
-	"github.com/juju/errors"
+	"github.com/9seconds/topographer/topolib"
+	"github.com/ip2location/ip2location-go"
 )
 
 const (
-	ip2locationDBCodeCountry = "DB1LITEBIN"
-	ip2locationDBCodeCity    = "DB3LITEBIN"
-
-	ip2locationDBURL = "https://www.ip2location.com/download/"
-
-	ip2locationTokenEnvName = "TOPOGRAPHER_IP2LOCATION_DOWNLOAD_TOKEN" // nolint: gas
+	ip2locationLiteDB   = "DB3LITEBINIPV6"
+	ip2locationFileName = "database.bin"
 )
 
-// IP2Location is a structure for IP2Location geolocation provider resolving.
-type IP2Location struct {
-	Provider
-
-	dbLock *sync.Mutex
+type ip2locationProvider struct {
+	dbCode        string
+	authToken     string
+	baseDirectory string
+	db            *ip2location.DB
+	dbMutex       sync.RWMutex
+	updateEvery   time.Duration
+	httpClient    topolib.HTTPClient
 }
 
-// Update updates database.
-func (i2l *IP2Location) Update() (bool, error) {
-	token, ok := os.LookupEnv(ip2locationTokenEnvName)
-	if !ok {
-		return false, errors.Errorf("ip2location download token is not set")
+func (i *ip2locationProvider) Name() string {
+	return NameIP2Location
+}
+
+func (i *ip2locationProvider) UpdateEvery() time.Duration {
+	return i.updateEvery
+}
+
+func (i *ip2locationProvider) BaseDirectory() string {
+	return i.baseDirectory
+}
+
+func (i *ip2locationProvider) Lookup(ctx context.Context, ip net.IP) (topolib.ProviderLookupResult, error) {
+	result := topolib.ProviderLookupResult{}
+
+	i.dbMutex.RLock()
+	defer i.dbMutex.RUnlock()
+
+	if i.db == nil {
+		return result, ErrDatabaseIsNotReadyYet
 	}
 
-	params := url.Values{}
-	params.Set("token", token)
-	if i2l.precision == config.PrecisionCountry {
-		params.Set("file", ip2locationDBCodeCountry)
-	} else {
-		params.Set("file", ip2locationDBCodeCity)
-	}
-
-	rawFile, err := i2l.downloadURL(ip2locationDBURL + "?" + params.Encode())
+	resolved, err := i.db.Get_all(ip.String())
 	if err != nil {
-		return false, errors.Annotatef(err, "Cannot update IP2Location DB")
+		return result, fmt.Errorf("cannot resolve ip address: %w", err)
 	}
-	if rawFile == nil {
-		return false, errors.Annotate(err, "Cannot update IP2Location DB")
+
+	result.City = resolved.City
+	result.CountryCode = topolib.Alpha2ToCountryCode(resolved.Country_short)
+
+	return result, nil
+}
+
+func (i *ip2locationProvider) Open(rootDir string) error {
+	db, err := ip2location.OpenDB(filepath.Join(rootDir, ip2locationFileName))
+	if err != nil {
+		return fmt.Errorf("cannot open a new database: %w", err)
 	}
+
+	i.dbMutex.Lock()
+	defer i.dbMutex.Unlock()
+
+	if i.db != nil {
+		i.db.Close()
+	}
+
+	i.db = db
+
+	return nil
+}
+
+func (i *ip2locationProvider) Shutdown() {
+	i.dbMutex.Lock()
+	defer i.dbMutex.Unlock()
+
+	if i.db != nil {
+		i.db.Close()
+		i.db = nil
+	}
+}
+
+func (i *ip2locationProvider) Download(ctx context.Context, rootDir string) error {
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, i.buildURL(), nil)
+
+	resp, err := i.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("cannot request a file download: %w", err)
+	}
+
+	defer flushResponse(resp.Body)
+
+	tempFile, err := ioutil.TempFile(rootDir, "archive-zip-")
+	if err != nil {
+		return fmt.Errorf("cannot create a tempfile: %w", err)
+	}
+
 	defer func() {
-		rawFile.Close()           // nolint
-		os.Remove(rawFile.Name()) // nolint
+		tempFile.Close()
+		os.Remove(tempFile.Name())
 	}()
 
-	rfStat, err := rawFile.Stat()
-	if err != nil {
-		return false, errors.Annotate(err, "Cannot stat raw file")
+	if err := copyResponse(tempFile, resp.Body); err != nil {
+		return fmt.Errorf("cannot copy archive: %w", err)
 	}
 
-	zipReader, err := zip.NewReader(rawFile, rfStat.Size())
-	if err != nil {
-		return false, errors.Annotate(err, "Cannot open zip archive")
+	if _, err := tempFile.Seek(0, io.SeekStart); err != nil {
+		return fmt.Errorf("cannot seek to the start of the file: %w", err)
 	}
 
-	for _, zfile := range zipReader.File {
-		log.WithFields(log.Fields{
-			"filename": zfile.Name,
-			"is_dir":   zfile.FileInfo().IsDir(),
-		}).Debug("Read file.")
+	tempFileStat, err := tempFile.Stat()
+	if err != nil {
+		return fmt.Errorf("cannot stat tempfile: %w", err)
+	}
 
-		if zfile.FileInfo().IsDir() {
+	zipReader, err := zip.NewReader(tempFile, tempFileStat.Size())
+	if err != nil {
+		return fmt.Errorf("cannot initialize zip reader: %w", err)
+	}
+
+	for _, zipFile := range zipReader.File {
+		if strings.ToUpper(filepath.Ext(zipFile.Name)) != ".BIN" {
 			continue
 		}
 
-		extension := filepath.Ext(zfile.Name)
-		if strings.ToLower(extension) == ".bin" {
-			opened, err := zfile.Open()
-			if err != nil {
-				return false, errors.Annotate(err, "Cannot extract file from archive")
-			}
-			return i2l.saveFile(opened)
-		}
-	}
-
-	return false, errors.Errorf("Cannot find required file")
-}
-
-// Reopen reopens MaxMind database.
-func (i2l *IP2Location) Reopen(lastUpdated time.Time) (err error) {
-	return i2l.reopenSafe(lastUpdated, func() error {
-		i2l.dbLock.Lock()
-		defer i2l.dbLock.Unlock()
-
-		if i2l.available {
-			ip2location.Close()
+		dbFile, err := zipFile.Open()
+		if err != nil {
+			return fmt.Errorf("cannot open a file in archive: %w", err)
 		}
 
-		ip2location.Open(i2l.FilePath())
+		target, err := os.Create(filepath.Join(rootDir, ip2locationFileName))
+		if err != nil {
+			return fmt.Errorf("cannot create a target file: %w", err)
+		}
+
+		if _, err := io.Copy(target, dbFile); err != nil {
+			return fmt.Errorf("cannot copy to target file: %w", err)
+		}
 
 		return nil
-	})
-}
-
-// Resolve resolves a list of the given IPs
-func (i2l *IP2Location) Resolve(ips []net.IP) ResolveResult {
-	return i2l.resolveSafe(func() map[string]GeoResult {
-		results := make(map[string]GeoResult)
-		for _, ip := range ips {
-			results[ip.String()] = i2l.resolveIP(ip)
-		}
-		return results
-	})
-}
-
-func (i2l *IP2Location) resolveIP(ip net.IP) GeoResult {
-	i2l.dbLock.Lock()
-	result := ip2location.Get_all(ip.String())
-	i2l.dbLock.Unlock()
-
-	country := strings.ToLower(result.Country_short)
-	if country == "invalid database file." || country == "-" {
-		country = ""
-	}
-	georesult := GeoResult{Country: country}
-
-	if i2l.precision == config.PrecisionCity && !strings.Contains(
-		result.City,
-		"This parameter is unavailable") && result.City != "-" {
-		georesult.City = result.City
 	}
 
-	return georesult
+	return fmt.Errorf("cannot find BIN file in archive")
 }
 
-// NewIP2Location returns new instance of IP2Location
-func NewIP2Location(conf *config.Config) *IP2Location {
-	return &IP2Location{
-		Provider: Provider{
-			directory:       conf.Directory,
-			dbname:          "ip2location",
-			downloadTimeout: 2 * time.Minute,
-			precision:       conf.Precision,
-			updateLock:      &sync.RWMutex{},
-		},
-		dbLock: &sync.Mutex{},
+func (i *ip2locationProvider) buildURL() string {
+	getQuery := url.Values{}
+
+	getQuery.Set("token", i.authToken)
+	getQuery.Set("file", i.dbCode)
+
+	u := url.URL{
+		Scheme:   "https",
+		Host:     "www.ip2location.com",
+		Path:     "/download/",
+		RawQuery: getQuery.Encode(),
 	}
+
+	return u.String()
+}
+
+// NewIP2Location returns a new instance which works with databases
+// from lite.ip2location.com
+//
+//   Identifier: ip2location_lite
+//   Provider type: offline
+//   Website: https://lite.ip2location.com
+//
+// ip2location seems quite strange and somehow 'unstable' provider but
+// quite popular. It is present mostly because of that fact: a lot of
+// websites use it.
+//
+// Please also pay attention to dbCode to supply. Topographer works with
+// BIN format, IPv6 and at least level 3. If you are not sure which
+// database to use, pass an empty string here.
+func NewIP2Location(client topolib.HTTPClient,
+	updateEvery time.Duration,
+	baseDirectory, authToken, dbCode string) (topolib.OfflineProvider, error) {
+	if authToken == "" {
+		return nil, ErrAuthTokenIsRequired
+	}
+
+	if dbCode == "" {
+		dbCode = ip2locationLiteDB
+	}
+
+	return &ip2locationProvider{
+		httpClient:    client,
+		updateEvery:   updateEvery,
+		baseDirectory: baseDirectory,
+		authToken:     authToken,
+		dbCode:        dbCode,
+	}, nil
 }

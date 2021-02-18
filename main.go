@@ -1,73 +1,103 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
-
-	"github.com/9seconds/topographer/api"
-	"github.com/9seconds/topographer/config"
-	"github.com/9seconds/topographer/providers"
+	"github.com/9seconds/topographer/topolib"
+	"github.com/leaanthony/clir"
 )
+
+var version = "dev"
 
 var (
-	app = kingpin.New(
-		"topographer",
-		"Fast and lenient IP geolocation service.")
+	configPath = ""
 
-	debug = app.Flag("debug", "Run in debug mode.").
-		Short('d').
-		Envar("TOPOGRAPHER_DEBUG").
-		Bool()
-	host = app.Flag("host", "Host to bind to.").
-		Short('b').
-		Default("127.0.0.1").
-		Envar("TOPOGRAPHER_HOST").
-		String()
-	port = app.Flag("port", "Port to bind to.").
-		Short('p').
-		Default("8000").
-		Envar("TOPOGRAPHER_PORT").
-		Int()
-	configFile = app.Arg("config-path", "Path to the config.").
-			Required().
-			File()
+	cli = clir.NewCli("topographer", "A lenient IP geolocation service", version)
+
+	errNoConfigPath = errors.New("need to set a config path")
 )
 
-func init() {
-	app.Version("0.0.1")
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetLevel(log.WarnLevel)
-}
+const (
+	DefaultReadTimeout  = 10 * time.Second
+	DefaultWriteTimeout = 10 * time.Second
+)
 
 func main() {
-	kingpin.MustParse(app.Parse(os.Args[1:]))
+	cli.StringFlag("config", "A path to config file", &configPath)
+	cli.Action(mainFunc)
 
-	if *debug {
-		log.SetLevel(log.DebugLevel)
+	if err := cli.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-	hostPort := *host + ":" + strconv.Itoa(*port)
+}
 
-	conf, err := config.Parse(*configFile)
+func mainFunc() error {
+	if configPath == "" {
+		return errNoConfigPath
+	}
+
+	conf, err := parseConfig(configPath)
 	if err != nil {
-		log.Fatalf(err.Error())
+		return fmt.Errorf("cannot read config: %w", err)
 	}
 
-	pset := providers.NewProviderSet(conf)
-	ticker := time.NewTicker(conf.UpdateEach.Duration)
-	go func() {
-		pset.Update(true)
-		for range ticker.C {
-			pset.Update(false)
+	rootCtx, cancel := makeRootContext()
+	defer cancel()
+
+	if err := os.MkdirAll(conf.GetRootDirectory(), 0777); err != nil {
+		return fmt.Errorf("cannot create root directory %s: %w", conf.GetRootDirectory(), err)
+	}
+
+	providers, err := makeProviders(conf)
+	if err != nil {
+		return fmt.Errorf("cannot initialise a list of providers: %w", err)
+	}
+
+	topo, err := topolib.NewTopographer(providers, newLogger(), conf.GetWorkerPoolSize())
+	if err != nil {
+		return fmt.Errorf("cannot initialize topographer: %w", err)
+	}
+
+	var httpHandler http.Handler = topo
+
+	if conf.HasBasicAuth() {
+		httpHandler = &basicAuthMiddleware{
+			handler:  httpHandler,
+			user:     conf.GetBasicAuthUser(),
+			password: conf.GetBasicAuthPassword(),
 		}
+	}
+
+	srv := &http.Server{
+		ReadTimeout:  DefaultReadTimeout,
+		WriteTimeout: DefaultWriteTimeout,
+		Handler:      httpHandler,
+	}
+	closeChan := make(chan struct{})
+
+	go func() {
+		<-rootCtx.Done()
+		srv.Shutdown(context.Background()) // nolint: errcheck
+		close(closeChan)
 	}()
 
-	router := api.MakeServer(pset)
-	if err := http.ListenAndServe(hostPort, router); err != nil {
-		log.Fatalf(err.Error())
+	listener, err := net.Listen("tcp", conf.Listen)
+	if err != nil {
+		return fmt.Errorf("cannot start listener: %w", err)
 	}
+
+	defer listener.Close()
+
+	srv.Serve(listener) // nolint: errcheck
+
+	<-closeChan
+
+	return nil
 }
