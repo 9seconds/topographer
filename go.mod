@@ -5,7 +5,9 @@ go 1.15
 require (
 	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
 	github.com/antchfx/htmlquery v1.2.3
+	github.com/antchfx/xpath v1.1.11 // indirect
 	github.com/antzucaro/matchr v0.0.0-20191224151129-ab6ba461ddec
+	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/hjson/hjson-go v3.1.0+incompatible
 	github.com/ip2location/ip2location-go v8.3.0+incompatible
@@ -19,9 +21,10 @@ require (
 	github.com/pariz/gountries v0.0.0-20200430155801-1c6a393df9c7
 	github.com/qri-io/jsonschema v0.2.0
 	github.com/rs/zerolog v1.20.0
-	github.com/spf13/afero v1.5.1
 	github.com/stretchr/testify v1.6.1
-	golang.org/x/sys v0.0.0-20210122093101-04d7465088b8 // indirect
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
+	golang.org/x/sys v0.0.0-20210218085108-9555bcde0c6a // indirect
+	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
