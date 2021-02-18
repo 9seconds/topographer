@@ -1,7 +1,7 @@
 Topographer
 ===========
 
-[![Build Status](https://github.com/9seconds/topographer/workflows/ci/badge.svg)](https://github.com/9seconds/topographer/actions)
+[![CI](https://github.com/9seconds/topographer/workflows/CI/badge.svg?branch=master)](https://github.com/9seconds/topographer/actions)
 
 Fast and lenient self-hosted IP geolocation service.
 
