@@ -3,6 +3,7 @@ Topographer
 
 [![CI](https://github.com/9seconds/topographer/workflows/CI/badge.svg?branch=master)](https://github.com/9seconds/topographer/actions)
 [![Code Coverage](https://codecov.io/gh/9seconds/topographer/branch/master/graph/badge.svg?token=CQSrBMbxh9)](https://codecov.io/gh/9seconds/topographer)
+[![Go Reference](https://pkg.go.dev/badge/github.com/9seconds/topographer.svg)](https://pkg.go.dev/github.com/9seconds/topographer)
 
 Fast and lenient self-hosted IP geolocation service.
 
