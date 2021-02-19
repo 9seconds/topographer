@@ -57,9 +57,29 @@ or simple build Docker container
 $ docker build -t topographer .
 ```
 
-Also, there is an image on docker hub:
-https://hub.docker.com/r/nineseconds/topographer/
 
+Installing
+==========
+
+Installation is simple as
+
+```shell
+$ go get github.com/9seconds/topographer
+```
+
+(but if you want, you can find prebuilt binaries on [releases page](https://github.com/9seconds/topographer/releases))
+
+We also have Docker images in both DockerHub and Github Container Registry:
+
+```shell
+$ docker pull nineseconds/topographer
+```
+
+and
+
+```shell
+$ docker pull ghcr.io/9seconds/topographer:master
+```
 
 Running the application
 =======================
@@ -79,4 +99,4 @@ $ docker run -v /path/to/local/config.hjson:/config.hjson -p 8000:80 nineseconds
 API
 ===
 
-Please see OpenAPI specification.
+Please see [OpenAPI specification](https://github.com/9seconds/topographer/blob/master/openapi.yaml).
