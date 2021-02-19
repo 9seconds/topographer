@@ -31,7 +31,7 @@ $(APP_NAME)-%: GOARCH=$(shell echo -n "$@" | sed 's?$(APP_NAME)-??' | cut -f2 -d
 $(APP_NAME)-%: ccbuilds
 	@env "GOOS=$(GOOS)" "GOARCH=$(GOARCH)" \
 		go build \
-		$(COMMON_BUILD_FLAGS) \
+		$(STATIC_BUILD_FLAGS) \
 		-o "./ccbuilds/$(APP_NAME)-$(GOOS)-$(GOARCH)"
 
 ccbuilds:
