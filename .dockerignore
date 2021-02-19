@@ -1,0 +1,6 @@
+.github/
+.bin/
+topographer
+*.md
+LICENSE
+Dockerfile

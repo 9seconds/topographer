@@ -1,5 +1,6 @@
 ROOT_DIR   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-IMAGE_NAME := topographer
+APP_NAME   := topographer
+IMAGE_NAME := $(APP_NAME)
 
 GOLANGCI_LINT_VERSION := v1.37.0
 
@@ -16,11 +17,11 @@ GOTOOL := env "GOBIN=$(GOBIN)" "PATH=$(ROOT_DIR)/.bin:$(PATH)"
 all: build
 
 .PHONY: build
-	@go build -mod=readonly
+	@go build -mod=readonly -o "$(APP_NAME)"
 
 .PHONY: static-build
 static-build:
-	@go build -mod=readonly -ldflags="-s -w -X 'main.version=$(VERSION_TAG) ($(VERSION_GO)) [$(VERSION_DATE)]'"
+	@go build -mod=readonly -ldflags="-s -w -X 'main.version=$(VERSION_TAG) ($(VERSION_GO)) [$(VERSION_DATE)]'" -o "$(APP_NAME)"
 
 .PHONY: test
 test:
