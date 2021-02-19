@@ -8,11 +8,16 @@
 
 FROM golang:1.15-alpine AS build-env
 
-RUN set -x \
-  && apk --update add git make
+ENV CGO_ENABLED=0
 
-ADD . /go/src/github.com/9seconds/topographer
-WORKDIR /go/src/github.com/9seconds/topographer
+RUN set -x \
+  && apk --update add \
+    ca-certificates \
+    git \
+    make
+
+ADD . /app
+WORKDIR /app
 
 RUN set -x \
   && make clean \
@@ -23,18 +28,18 @@ RUN set -x \
 ###############################################################################
 # PACKAGE STAGE
 
-FROM alpine:latest
+FROM scratch
 
 ENTRYPOINT ["/topographer"]
 CMD ["-config", "/config.hjson"]
 EXPOSE 80
 
-RUN set -x \
-  && apk add --no-cache --update ca-certificates
-
 COPY --from=build-env \
-    /go/src/github.com/9seconds/topographer/topographer \
+    /etc/ssl/certs/ca-certificates.crt \
+    /etc/ssl/certs/ca-certificates.crt
+COPY --from=build-env \
+    /app/topographer \
     /topographer
 COPY --from=build-env \
-    /go/src/github.com/9seconds/topographer/example.config.hjson \
+    /app/example.config.hjson \
     /config.hjson

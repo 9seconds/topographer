@@ -1,11 +1,15 @@
 ROOT_DIR   := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-IMAGE_NAME := topographer
+APP_NAME   := topographer
+IMAGE_NAME := $(APP_NAME)
+
+CC_BINARIES := $(shell bash -c "echo -n $(APP_NAME)-{linux,freebsd,openbsd}-{386,amd64} $(APP_NAME)-linux-{arm,arm64}")
 
 GOLANGCI_LINT_VERSION := v1.37.0
 
-VERSION_GO   := $(shell go version)
-VERSION_DATE := $(shell date -Ru)
-VERSION_TAG  := $(shell git describe --tags --always)
+VERSION_GO         := $(shell go version)
+VERSION_DATE       := $(shell date -Ru)
+VERSION_TAG        := $(shell git describe --tags --always)
+STATIC_BUILD_FLAGS := -ldflags="-s -w -X 'main.version=$(VERSION_TAG) ($(VERSION_GO)) [$(VERSION_DATE)]'"
 
 GOBIN  := $(ROOT_DIR)/.bin
 GOTOOL := env "GOBIN=$(GOBIN)" "PATH=$(ROOT_DIR)/.bin:$(PATH)"
@@ -16,11 +20,22 @@ GOTOOL := env "GOBIN=$(GOBIN)" "PATH=$(ROOT_DIR)/.bin:$(PATH)"
 all: build
 
 .PHONY: build
-	@go build -mod=readonly
+	@go build -mod=readonly -o "$(APP_NAME)"
 
 .PHONY: static-build
 static-build:
-	@go build -mod=readonly -ldflags="-s -w -X 'main.version=$(VERSION_TAG) ($(VERSION_GO)) [$(VERSION_DATE)]'"
+	@go build -mod=readonly $(STATIC_BUILD_FLAGS) -o "$(APP_NAME)"
+
+$(APP_NAME)-%: GOOS=$(shell echo -n "$@" | sed 's?$(APP_NAME)-??' | cut -f1 -d-)
+$(APP_NAME)-%: GOARCH=$(shell echo -n "$@" | sed 's?$(APP_NAME)-??' | cut -f2 -d-)
+$(APP_NAME)-%: ccbuilds
+	@env "GOOS=$(GOOS)" "GOARCH=$(GOARCH)" \
+		go build \
+		$(COMMON_BUILD_FLAGS) \
+		-o "./ccbuilds/$(APP_NAME)-$(GOOS)-$(GOARCH)"
+
+ccbuilds:
+	@rm -rf ./ccbuilds && mkdir -p ./ccbuilds
 
 .PHONY: test
 test:
@@ -29,6 +44,9 @@ test:
 .PHONY: citest
 citest:
 	@go test  -coverprofile=coverage.txt -covermode=atomic -race -v ./...
+
+.PHONY: crosscompile
+crosscompile: $(CC_BINARIES)
 
 .PHONY: clean
 clean:
