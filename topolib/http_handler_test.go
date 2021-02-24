@@ -371,6 +371,31 @@ func (suite *HTTPHanderTestSuite) TestIncorrectMethod() {
 	suite.Equal(http.StatusMethodNotAllowed, suite.resp.Code)
 }
 
+func (suite *HTTPHanderTestSuite) TestGetIPOk() {
+	result := topolib.ProviderLookupResult{
+		CountryCode: topolib.Alpha2ToCountryCode("RU"),
+		City:        "Nizhniy Novgorod",
+	}
+	ip := net.ParseIP("192.168.1.1").To16()
+	req := httptest.NewRequest("GET", "/192.168.1.1/", nil)
+
+	suite.providerMock.On("Lookup", mock.Anything, ip).Return(result, nil).Once()
+
+	suite.h.ServeHTTP(suite.resp, req)
+
+	suite.Equal(http.StatusOK, suite.resp.Code)
+
+	errs, err := jsonSchemaGETResolve.ValidateBytes(context.Background(),
+		suite.resp.Body.Bytes())
+
+	suite.NoError(err)
+	suite.Empty(errs)
+	suite.Contains(suite.resp.Body.String(), "192.168.1.1")
+	suite.Contains(suite.resp.Body.String(), "RU")
+	suite.Contains(suite.resp.Body.String(), "RUS")
+	suite.Contains(suite.resp.Body.String(), "Nizhniy Novgorod")
+}
+
 func (suite *HTTPHanderTestSuite) TestGetOk() {
 	result := topolib.ProviderLookupResult{
 		CountryCode: topolib.Alpha2ToCountryCode("RU"),

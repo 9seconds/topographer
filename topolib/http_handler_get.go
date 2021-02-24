@@ -20,6 +20,10 @@ func (h httpHandler) handleGetResolve(w http.ResponseWriter, req *http.Request) 
 		return
 	}
 
+	h.handleGetIP(w, req, ipAddr)
+}
+
+func (h httpHandler) handleGetIP(w http.ResponseWriter, req *http.Request, ipAddr net.IP) {
 	resolved, err := h.topo.Resolve(req.Context(), ipAddr, nil)
 	if err != nil {
 		h.sendError(w, err, "Cannot resolve IP address", 0)
