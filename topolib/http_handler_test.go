@@ -331,7 +331,7 @@ var (
 	}()
 )
 
-type HTTPHanderTestSuite struct {
+type HTTPHandlerTestSuite struct {
 	suite.Suite
 
 	h            http.Handler
@@ -340,7 +340,7 @@ type HTTPHanderTestSuite struct {
 	resp         *httptest.ResponseRecorder
 }
 
-func (suite *HTTPHanderTestSuite) SetupTest() {
+func (suite *HTTPHandlerTestSuite) SetupTest() {
 	suite.providerMock = &ProviderMock{}
 	suite.loggerMock = &LoggerMock{}
 
@@ -360,18 +360,43 @@ func (suite *HTTPHanderTestSuite) SetupTest() {
 	suite.resp = httptest.NewRecorder()
 }
 
-func (suite *HTTPHanderTestSuite) TearDownTest() {
+func (suite *HTTPHandlerTestSuite) TearDownTest() {
 	suite.providerMock.AssertExpectations(suite.T())
 	suite.loggerMock.AssertExpectations(suite.T())
 }
 
-func (suite *HTTPHanderTestSuite) TestIncorrectMethod() {
+func (suite *HTTPHandlerTestSuite) TestIncorrectMethod() {
 	suite.h.ServeHTTP(suite.resp, httptest.NewRequest("PATCH", "/", nil))
 
 	suite.Equal(http.StatusMethodNotAllowed, suite.resp.Code)
 }
 
-func (suite *HTTPHanderTestSuite) TestGetOk() {
+func (suite *HTTPHandlerTestSuite) TestGetIPOk() {
+	result := topolib.ProviderLookupResult{
+		CountryCode: topolib.Alpha2ToCountryCode("RU"),
+		City:        "Nizhniy Novgorod",
+	}
+	ip := net.ParseIP("192.168.1.1").To16()
+	req := httptest.NewRequest("GET", "/192.168.1.1/", nil)
+
+	suite.providerMock.On("Lookup", mock.Anything, ip).Return(result, nil).Once()
+
+	suite.h.ServeHTTP(suite.resp, req)
+
+	suite.Equal(http.StatusOK, suite.resp.Code)
+
+	errs, err := jsonSchemaGETResolve.ValidateBytes(context.Background(),
+		suite.resp.Body.Bytes())
+
+	suite.NoError(err)
+	suite.Empty(errs)
+	suite.Contains(suite.resp.Body.String(), "192.168.1.1")
+	suite.Contains(suite.resp.Body.String(), "RU")
+	suite.Contains(suite.resp.Body.String(), "RUS")
+	suite.Contains(suite.resp.Body.String(), "Nizhniy Novgorod")
+}
+
+func (suite *HTTPHandlerTestSuite) TestGetOk() {
 	result := topolib.ProviderLookupResult{
 		CountryCode: topolib.Alpha2ToCountryCode("RU"),
 		City:        "Nizhniy Novgorod",
@@ -397,7 +422,7 @@ func (suite *HTTPHanderTestSuite) TestGetOk() {
 	suite.Contains(suite.resp.Body.String(), "Nizhniy Novgorod")
 }
 
-func (suite *HTTPHanderTestSuite) TestGetUnkownPath() {
+func (suite *HTTPHandlerTestSuite) TestGetUnkownPath() {
 	req := httptest.NewRequest("GET", "/lalala", nil)
 	req.RemoteAddr = "192.168.1.1:5678"
 
@@ -406,7 +431,7 @@ func (suite *HTTPHanderTestSuite) TestGetUnkownPath() {
 	suite.Equal(http.StatusNotFound, suite.resp.Code)
 }
 
-func (suite *HTTPHanderTestSuite) TestGetStats() {
+func (suite *HTTPHandlerTestSuite) TestGetStats() {
 	req := httptest.NewRequest("GET", "/stats/", nil)
 	req.RemoteAddr = "192.168.1.1:5678"
 
@@ -421,7 +446,7 @@ func (suite *HTTPHanderTestSuite) TestGetStats() {
 	suite.Empty(errs)
 }
 
-func (suite *HTTPHanderTestSuite) TestPostUnknownPath() {
+func (suite *HTTPHandlerTestSuite) TestPostUnknownPath() {
 	req := httptest.NewRequest("POST", "/lalala", nil)
 	req.RemoteAddr = "192.168.1.1:5678"
 
@@ -430,7 +455,7 @@ func (suite *HTTPHanderTestSuite) TestPostUnknownPath() {
 	suite.Equal(http.StatusNotFound, suite.resp.Code)
 }
 
-func (suite *HTTPHanderTestSuite) TestPostUnsupportedMediaType() {
+func (suite *HTTPHandlerTestSuite) TestPostUnsupportedMediaType() {
 	req := httptest.NewRequest("POST", "/", strings.NewReader("{}"))
 
 	suite.h.ServeHTTP(suite.resp, req)
@@ -438,7 +463,7 @@ func (suite *HTTPHanderTestSuite) TestPostUnsupportedMediaType() {
 	suite.Equal(http.StatusUnsupportedMediaType, suite.resp.Code)
 }
 
-func (suite *HTTPHanderTestSuite) TestPostBadRequest() {
+func (suite *HTTPHandlerTestSuite) TestPostBadRequest() {
 	req := httptest.NewRequest("POST", "/", strings.NewReader("{}"))
 	req.Header.Add("Content-Type", "application/json")
 
@@ -447,7 +472,7 @@ func (suite *HTTPHanderTestSuite) TestPostBadRequest() {
 	suite.Equal(http.StatusBadRequest, suite.resp.Code)
 }
 
-func (suite *HTTPHanderTestSuite) TestPostOk() {
+func (suite *HTTPHandlerTestSuite) TestPostOk() {
 	req := httptest.NewRequest("POST",
 		"/",
 		strings.NewReader(`{"ips": ["192.168.1.1"]}`))
@@ -476,5 +501,5 @@ func (suite *HTTPHanderTestSuite) TestPostOk() {
 }
 
 func TestHTTPHandler(t *testing.T) {
-	suite.Run(t, &HTTPHanderTestSuite{})
+	suite.Run(t, &HTTPHandlerTestSuite{})
 }

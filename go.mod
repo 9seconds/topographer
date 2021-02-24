@@ -6,7 +6,7 @@ require (
 	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
 	github.com/antchfx/htmlquery v1.2.3
 	github.com/antchfx/xpath v1.1.11 // indirect
-	github.com/antzucaro/matchr v0.0.0-20191224151129-ab6ba461ddec
+	github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/hjson/hjson-go v3.1.0+incompatible
@@ -22,9 +22,9 @@ require (
 	github.com/qri-io/jsonschema v0.2.0
 	github.com/rs/zerolog v1.20.0
 	github.com/stretchr/testify v1.6.1
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
-	golang.org/x/sys v0.0.0-20210218085108-9555bcde0c6a // indirect
+	golang.org/x/net v0.0.0-20210224082022-3d97a244fca7 // indirect
+	golang.org/x/sys v0.0.0-20210223212115-eede4237b368 // indirect
 	golang.org/x/text v0.3.5 // indirect
-	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
+	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

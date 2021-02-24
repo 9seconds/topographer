@@ -89,6 +89,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ResponseError"
+
+  /{ip}:
+    get:
+      description: Resolve a single IP address
+      operationId: getIP
+      parameters:
+        - in: path
+          name: ip
+          required: true
+          description: IP address to resolve
+          schema:
+            $ref: "#/components/schemas/IP"
+      responses:
+        "200":
+          description: Results of resolved geolocation
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - result
+                additionalProperties: false
+                properties:
+                  result:
+                    $ref: "#/components/schemas/GeolocationResult"
+        default:
+          description: Error response in case if geolocation is impossible
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseError"
+
   /stats:
     get:
       description: Different statistics on provider usage

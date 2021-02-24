@@ -2,6 +2,7 @@ package topolib
 
 import (
 	"encoding/json"
+	"net"
 	"net/http"
 	"strings"
 )
@@ -11,17 +12,21 @@ type httpHandler struct {
 }
 
 func (h httpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	path := strings.TrimSuffix(req.URL.Path, "/")
+	path := strings.Trim(req.URL.Path, "/")
 
 	switch req.Method {
 	case http.MethodGet, http.MethodHead:
 		switch path {
 		case "":
 			h.handleGetResolve(w, req)
-		case "/stats":
+		case "stats":
 			h.handleGetStats(w, req)
 		default:
-			h.sendError(w, nil, "URL not found", http.StatusNotFound)
+			if ipAddr := net.ParseIP(path); ipAddr != nil {
+				h.handleGetIP(w, req, ipAddr)
+			} else {
+				h.sendError(w, nil, "URL not found", http.StatusNotFound)
+			}
 		}
 	case http.MethodPost:
 		switch path {
