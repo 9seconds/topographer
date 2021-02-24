@@ -71,7 +71,7 @@ jobs:
       - name: Run linter
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.37.0
+          version: v1.37.1
 
   docker:
     name: Docker
