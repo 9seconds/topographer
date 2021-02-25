@@ -6,12 +6,13 @@
 ###############################################################################
 # BUILD STAGE
 
-FROM golang:1.15-alpine AS build-env
+FROM golang:1.16-alpine AS build-env
 
 ENV CGO_ENABLED=0
 
 RUN set -x \
   && apk --update add \
+    bash \
     ca-certificates \
     git \
     make
