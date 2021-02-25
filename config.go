@@ -13,10 +13,13 @@ import (
 )
 
 const (
-	DefaultHTTPTimeout       = 10 * time.Second
-	DefaultUpdateEvery       = 24 * time.Hour
-	DefaultRateLimitInterval = 100 * time.Millisecond
-	DefaultRateLimitBurst    = 10
+	DefaultHTTPTimeout                        = 10 * time.Second
+	DefaultUpdateEvery                        = 24 * time.Hour
+	DefaultRateLimitInterval                  = 100 * time.Millisecond
+	DefaultRateLimitBurst                     = 10
+	DefaultCircuitBreakerOpenThreshold        = 5
+	DefaultCircuitBreakerHalfOpenTimeout      = time.Minute
+	DefaultCircuitBreakerResetFailuresTimeout = 20 * time.Second
 )
 
 type duration struct {
@@ -71,15 +74,15 @@ func (c config) GetWorkerPoolSize() int {
 }
 
 func (c config) GetBasicAuthUser() []byte {
-    return []byte(c.BasicAuthUser)
+	return []byte(c.BasicAuthUser)
 }
 
 func (c config) GetBasicAuthPassword() []byte {
-    return []byte(c.BasicAuthPassword)
+	return []byte(c.BasicAuthPassword)
 }
 
 func (c config) HasBasicAuth() bool {
-    return c.BasicAuthUser != "" || c.BasicAuthPassword != ""
+	return c.BasicAuthUser != "" || c.BasicAuthPassword != ""
 }
 
 func (c config) GetProviders() []configProvider {
@@ -87,13 +90,16 @@ func (c config) GetProviders() []configProvider {
 }
 
 type configProvider struct {
-	Name               string            `json:"name"`
-	Directory          string            `json:"directory"`
-	RateLimitInterval  duration          `json:"rate_limit_interval"`
-	RateLimitBurst     uint              `json:"rate_limit_burst"`
-	UpdateEvery        duration          `json:"update_every"`
-	HTTPTimeout        duration          `json:"http_timeout"`
-	SpecificParameters map[string]string `json:"specific_parameters"`
+	Name                               string            `json:"name"`
+	Directory                          string            `json:"directory"`
+	RateLimitInterval                  duration          `json:"rate_limit_interval"`
+	RateLimitBurst                     uint              `json:"rate_limit_burst"`
+	CircuitBreakerOpenThreshold        uint32            `json:"circuit_breaker_open_threshold"`
+	CircuitBreakerHalfOpenTimeout      duration          `json:"circuit_breaker_half_open_timeout"`
+	CircuitBreakerResetFailuresTimeout duration          `json:"circuit_breaker_reset_failures_timeout"`
+	UpdateEvery                        duration          `json:"update_every"`
+	HTTPTimeout                        duration          `json:"http_timeout"`
+	SpecificParameters                 map[string]string `json:"specific_parameters"`
 }
 
 func (c configProvider) GetName() string {
@@ -122,6 +128,30 @@ func (c configProvider) GetRateLimitBurst() int {
 	}
 
 	return int(c.RateLimitBurst)
+}
+
+func (c configProvider) GetCircuitBreakerOpenThreshold() uint32 {
+	if c.CircuitBreakerOpenThreshold == 0 {
+		return DefaultCircuitBreakerOpenThreshold
+	}
+
+	return c.CircuitBreakerOpenThreshold
+}
+
+func (c configProvider) GetCircuitBreakerHalfOpenTimeout() time.Duration {
+	if c.CircuitBreakerHalfOpenTimeout.Duration == 0 {
+		return DefaultCircuitBreakerHalfOpenTimeout
+	}
+
+	return c.CircuitBreakerHalfOpenTimeout.Duration
+}
+
+func (c configProvider) GetCircuitBreakerResetFailuresTimeout() time.Duration {
+	if c.CircuitBreakerResetFailuresTimeout.Duration == 0 {
+		return DefaultCircuitBreakerResetFailuresTimeout
+	}
+
+	return c.CircuitBreakerResetFailuresTimeout.Duration
 }
 
 func (c configProvider) GetUpdateEvery() time.Duration {

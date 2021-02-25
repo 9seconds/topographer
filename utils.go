@@ -118,7 +118,10 @@ func makeNewHTTPClient(conf configProvider) topolib.HTTPClient {
 	return topolib.NewHTTPClient(httpClient,
 		"topographer/"+version,
 		conf.GetRateLimitInterval(),
-		conf.GetRateLimitBurst())
+		conf.GetRateLimitBurst(),
+		conf.GetCircuitBreakerOpenThreshold(),
+		conf.GetCircuitBreakerHalfOpenTimeout(),
+		conf.GetCircuitBreakerResetFailuresTimeout())
 }
 
 func boolParam(param string) bool {
