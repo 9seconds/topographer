@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type circuitBreakerCallback func() (*http.Response, error)
+type circuitBreakerCallback func(context.Context) (*http.Response, error)
 
 const (
 	circuitBreakerStateClosed uint32 = iota
@@ -42,15 +42,20 @@ func (c *circuitBreaker) Do(ctx context.Context, callback circuitBreakerCallback
 }
 
 func (c *circuitBreaker) doClosed(ctx context.Context, callback circuitBreakerCallback) (*http.Response, error) {
-	resp, err := callback()
+	resp, err := callback(ctx)
 
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case c.stateMutexChan <- true:
-		defer func() {
-			<-c.stateMutexChan
-		}()
+	default:
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case c.stateMutexChan <- true:
+			defer func() {
+				<-c.stateMutexChan
+			}()
+		}
 	}
 
 	if err == nil {
@@ -73,15 +78,20 @@ func (c *circuitBreaker) doHalfOpened(ctx context.Context, callback circuitBreak
 		return nil, ErrCircuitBreakerOpened
 	}
 
-	resp, err := callback()
+	resp, err := callback(ctx)
 
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-	case c.stateMutexChan <- true:
-		defer func() {
-			<-c.stateMutexChan
-		}()
+	default:
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case c.stateMutexChan <- true:
+			defer func() {
+				<-c.stateMutexChan
+			}()
+		}
 	}
 
 	if c.state != circuitBreakerStateHalfOpened {

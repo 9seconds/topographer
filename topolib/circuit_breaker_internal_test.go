@@ -27,7 +27,7 @@ func (suite *CircuitBreakerTestSuite) SetupTest() {
 	suite.cb = newCircuitBreaker(2, 200*time.Millisecond, 500*time.Millisecond)
 }
 
-func (suite *CircuitBreakerTestSuite) CallbackOk() (*http.Response, error) {
+func (suite *CircuitBreakerTestSuite) CallbackOk(_ context.Context) (*http.Response, error) {
 	rec := httptest.NewRecorder()
 
 	rec.WriteHeader(http.StatusCreated)
@@ -35,7 +35,7 @@ func (suite *CircuitBreakerTestSuite) CallbackOk() (*http.Response, error) {
 	return rec.Result(), nil
 }
 
-func (suite *CircuitBreakerTestSuite) CallbackErr() (*http.Response, error) {
+func (suite *CircuitBreakerTestSuite) CallbackErr(_ context.Context) (*http.Response, error) {
 	return nil, io.EOF
 }
 
@@ -203,7 +203,7 @@ func (suite *CircuitBreakerTestSuite) TestCheckConcurrentExecutionInHalfOpened()
 
 	time.Sleep(700 * time.Millisecond)
 
-	go suite.cb.Do(suite.ctx, func() (*http.Response, error) {
+    go suite.cb.Do(suite.ctx, func(_ context.Context) (*http.Response, error) { // nolint: errcheck
 		time.Sleep(500 * time.Millisecond)
 
 		return nil, nil
