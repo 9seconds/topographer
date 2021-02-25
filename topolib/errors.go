@@ -14,6 +14,10 @@ var (
 	// ErrContextIsClosed returns if context is closed during execution
 	// of the method.
 	ErrContextIsClosed = errors.New("context is closed")
+
+	// ErrCircuitBreakerOpened returns by http client if circuit breaker
+	// is opened.
+	ErrCircuitBreakerOpened = errors.New("circuit breaker is opened")
 )
 
 type jsonHTTPError struct {
