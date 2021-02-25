@@ -39,6 +39,10 @@ func (suite *CircuitBreakerTestSuite) CallbackErr(_ context.Context) (*http.Resp
 	return nil, io.EOF
 }
 
+func (suite *CircuitBreakerTestSuite) CallbackIgnore(_ context.Context) (*http.Response, error) {
+	return nil, ErrCircuitBreakerIgnore
+}
+
 func (suite *CircuitBreakerTestSuite) AssertResponseOk(resp *http.Response) {
 	suite.NotNil(resp)
 	suite.Equal(http.StatusCreated, resp.StatusCode)
@@ -162,6 +166,18 @@ func (suite *CircuitBreakerTestSuite) TestOpenedExecute() {
 	suite.EqualValues(circuitBreakerStateOpened, suite.cb.state)
 }
 
+func (suite *CircuitBreakerTestSuite) TestOpenedIgnore() {
+	suite.cb.Do(suite.ctx, suite.CallbackIgnore) // nolint: errcheck
+	suite.cb.Do(suite.ctx, suite.CallbackIgnore) // nolint: errcheck
+	suite.cb.Do(suite.ctx, suite.CallbackIgnore) // nolint: errcheck
+	suite.cb.Do(suite.ctx, suite.CallbackIgnore) // nolint: errcheck
+
+	_, err := suite.cb.Do(suite.ctx, suite.CallbackOk) // nolint: errcheck
+
+	suite.NoError(err)
+	suite.EqualValues(circuitBreakerStateClosed, suite.cb.state)
+}
+
 func (suite *CircuitBreakerTestSuite) TestHalfOpened() {
 	suite.cb.Do(suite.ctx, suite.CallbackErr) // nolint: errcheck
 	suite.cb.Do(suite.ctx, suite.CallbackErr) // nolint: errcheck
@@ -203,7 +219,7 @@ func (suite *CircuitBreakerTestSuite) TestCheckConcurrentExecutionInHalfOpened()
 
 	time.Sleep(700 * time.Millisecond)
 
-    go suite.cb.Do(suite.ctx, func(_ context.Context) (*http.Response, error) { // nolint: errcheck
+	go suite.cb.Do(suite.ctx, func(_ context.Context) (*http.Response, error) { // nolint: errcheck
 		time.Sleep(500 * time.Millisecond)
 
 		return nil, nil

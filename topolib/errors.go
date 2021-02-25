@@ -18,6 +18,10 @@ var (
 	// ErrCircuitBreakerOpened returns by http client if circuit breaker
 	// is opened.
 	ErrCircuitBreakerOpened = errors.New("circuit breaker is opened")
+
+	// ErrCircuitBreakerIgnore should be returned if it is necessary to
+	// ignore circuit breaker error in http client.
+	ErrCircuitBreakerIgnore = errors.New("this error should be ignores by circuit breaker")
 )
 
 type jsonHTTPError struct {

@@ -7,7 +7,6 @@ require (
 	github.com/antchfx/htmlquery v1.2.3
 	github.com/antchfx/xpath v1.1.11 // indirect
 	github.com/antzucaro/matchr v0.0.0-20210222213004-b04723ef80f0
-	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/dgraph-io/ristretto v0.0.3
 	github.com/hjson/hjson-go v3.1.0+incompatible
 	github.com/ip2location/ip2location-go v8.3.0+incompatible
@@ -15,7 +14,6 @@ require (
 	github.com/kentik/patricia v0.0.0-20201202224819-f9447a6e25f1
 	github.com/leaanthony/clir v1.0.4
 	github.com/mccutchen/go-httpbin v1.1.1
-	github.com/mercari/go-circuitbreaker v0.0.0-20201130021310-aff740600e91
 	github.com/oschwald/maxminddb-golang v1.8.0
 	github.com/panjf2000/ants/v2 v2.4.3
 	github.com/pariz/gountries v0.0.0-20200430155801-1c6a393df9c7

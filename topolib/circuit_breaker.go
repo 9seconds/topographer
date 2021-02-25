@@ -2,6 +2,7 @@ package topolib
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -58,7 +59,7 @@ func (c *circuitBreaker) doClosed(ctx context.Context, callback circuitBreakerCa
 		}
 	}
 
-	if err == nil {
+	if c.isErrorOk(err) {
 		c.switchState(circuitBreakerStateClosed)
 
 		return resp, err
@@ -98,10 +99,10 @@ func (c *circuitBreaker) doHalfOpened(ctx context.Context, callback circuitBreak
 		return resp, err
 	}
 
-	if err != nil {
-		c.switchState(circuitBreakerStateOpened)
-	} else {
+	if c.isErrorOk(err) {
 		c.switchState(circuitBreakerStateClosed)
+	} else {
+		c.switchState(circuitBreakerStateOpened)
 	}
 
 	return resp, err
@@ -173,6 +174,10 @@ func (c *circuitBreaker) ensureTimer(timerRef **time.Timer, timeout time.Duratio
 	if *timerRef == nil {
 		*timerRef = time.AfterFunc(timeout, callback)
 	}
+}
+
+func (c *circuitBreaker) isErrorOk(err error) bool {
+	return err == nil || errors.Is(err, ErrCircuitBreakerIgnore)
 }
 
 func newCircuitBreaker(openThreshold uint32,

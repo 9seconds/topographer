@@ -31,7 +31,10 @@ func (suite *HTTPClientTestSuite) SetupTest() {
 	suite.c = topolib.NewHTTPClient(suite.httpbinEndpoint.Client(),
 		"test",
 		100*time.Millisecond,
-		1)
+		1,
+		5,
+		time.Minute,
+		time.Minute)
 }
 
 func (suite *HTTPClientTestSuite) TestRateLimiter() {
