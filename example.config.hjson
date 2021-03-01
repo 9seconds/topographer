@@ -53,6 +53,9 @@
     //         "directory": "${provider_name}",
     //         "rate_limit_interval": "100ms",
     //         "rate_limit_burst": 10,
+    //         "circuit_breaker_open_threshold": 5,
+    //         "circuit_breaker_half_open_timeout": "1m",
+    //         "circuit_breaker_reset_failures_timeout": "20s",
     //         "update_every": "24h",
     //         "http_timeout": "10s",
     //         "specific_parameters": {}
@@ -66,6 +69,19 @@
     //
     // Please see rate_limit_interval and rate_limit_burst meanings
     // here: https://pkg.go.dev/golang.org/x/time/rate
+    //
+    // circuit_breaker_open_threshold defines a number of errors
+    // required to transit into OPEN state. In open state circuit
+    // breaker does not allow real requests to the target netloc.
+    //
+    // circuit_breaker_half_open_timeout defines a time period when
+    // circuit breaker closes for a single request to check if we
+    // already can proceed with out requests or not. If request fails,
+    // it immediately goes into OPEN state. Succeeds - to CLOSED state.
+    //
+    // circuit_breaker_reset_failures_timeout defines a time interval
+    // when failure counter resets. It is applicable only for closed
+    // state.
     //
     // update_every is a periodicity that is used to update provider
     // database if this is applicable.

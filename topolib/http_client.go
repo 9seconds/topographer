@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/mercari/go-circuitbreaker"
 	"golang.org/x/time/rate"
 )
 
@@ -16,7 +15,7 @@ type httpClient struct {
 	userAgent      string
 	client         *http.Client
 	rateLimiter    *rate.Limiter
-	circuitBreaker *circuitbreaker.CircuitBreaker
+	circuitBreaker *circuitBreaker
 }
 
 func (h httpClient) Do(req *http.Request) (*http.Response, error) {
@@ -29,11 +28,11 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 
 	req.Header.Set("User-Agent", h.userAgent)
 
-	resp, err := h.circuitBreaker.Do(ctx, func() (interface{}, error) {
+	resp, err := h.circuitBreaker.Do(ctx, func(ctx context.Context) (*http.Response, error) {
 		resp, err := h.client.Do(req.WithContext(ctx))
 
 		if err := h.rateLimiter.Wait(ctx); err != nil {
-			return nil, circuitbreaker.Ignore(fmt.Errorf("rate limited: %w", err))
+			return nil, ErrCircuitBreakerIgnore
 		}
 
 		if err != nil {
@@ -59,7 +58,7 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	return resp.(*http.Response), err
+	return resp, err
 }
 
 // NewHTTPClient prepares a new HTTP client, wraps it with rate limiter,
@@ -67,14 +66,36 @@ func (h httpClient) Do(req *http.Request) (*http.Response, error) {
 //
 // Please see https://pkg.go.dev/golang.org/x/time/rate to get a meaning
 // of rate limiter parameters.
+//
+// A meaning of circuit breaker parameters:
+//
+// circuitBreakerOpenThreshold - this is a threshold of failures when
+// circuit breaker becomes OPEN. So, if you pass 3 here, then after 3
+// failures, circuit breaker switches into OPEN state and blocks access
+// to a target.
+//
+// circuitBreakerResetFailuresTimeout - is tightly coupled with
+// circuitBreakerOpenThreshold. Each time period when circuit breaker
+// is closed, we try to reset a failure counter. So, if you pass 10
+// here, make 2 errors then after 10 seconds this counter is going to be
+// reset.
+//
+// circuitBreakerHalfOpenTimeout - when circuit breaker is closed, we
+// open it after this time perios and it goes into HALF_OPEN state.
+// Within this state we allow 1 attempt. If this attempt fails, then it
+// goes into OPEN state again. If succeed - goes to CLOSED.
 func NewHTTPClient(client *http.Client,
 	userAgent string,
 	rateLimiterInterval time.Duration,
-	rateLimitBurst int) HTTPClient {
+	rateLimitBurst int,
+	circuitBreakerOpenThreshold uint32,
+	circuitBreakerHalfOpenTimeout, circuitBreakerResetFailuresTimeout time.Duration) HTTPClient {
 	return httpClient{
-		userAgent:      userAgent,
-		client:         client,
-		rateLimiter:    rate.NewLimiter(rate.Every(rateLimiterInterval), rateLimitBurst),
-		circuitBreaker: circuitbreaker.New(nil),
+		userAgent:   userAgent,
+		client:      client,
+		rateLimiter: rate.NewLimiter(rate.Every(rateLimiterInterval), rateLimitBurst),
+		circuitBreaker: newCircuitBreaker(circuitBreakerOpenThreshold,
+			circuitBreakerHalfOpenTimeout,
+			circuitBreakerResetFailuresTimeout),
 	}
 }

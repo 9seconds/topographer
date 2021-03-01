@@ -51,7 +51,10 @@ func (suite *ProviderTestSuite) SetupTest() {
 	suite.http = topolib.NewHTTPClient(&http.Client{},
 		"test-agent",
 		time.Millisecond,
-		100)
+		100,
+		5,
+		time.Minute,
+		time.Minute)
 }
 
 type OnlineProviderTestSuite struct {
